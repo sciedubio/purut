@@ -209,7 +209,8 @@
       tasks: values[i][6],  
       imageUrl: values[i][7], 
       createdAt: values[i][8],
-      photos: values[i][9] // 앨범 사진 배열 추가
+      photos: values[i][9], // 앨범 사진 배열 추가
+      aiGuide: values[i][10] // ✨ AI 관리 가이드 추가
     });
   }
   return ContentService.createTextOutput(JSON.stringify(plants)).setMimeType(ContentService.MimeType.JSON);
@@ -222,7 +223,7 @@ function doPost(e) {
     
     // ✨ 0. AI 진단 요청인 경우 (Gemini API 안전 호출)
     if (data.recordType === 'ai_query') {
-      var API_KEY = "여기에_GEMINI_API_키를_넣으세요";
+      var API_KEY = "여기에_GEMINI_API_키를_넣으세요"; // ⬅️ 반드시 본인 키로 변경하세요!
       var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + API_KEY;
 
       var parts = [{ text: data.prompt }];
@@ -240,7 +241,16 @@ function doPost(e) {
       var options = { method: "post", contentType: "application/json", payload: JSON.stringify(payload), muteHttpExceptions: true };
       var response = UrlFetchApp.fetch(url, options);
       var json = JSON.parse(response.getContentText());
-      var replyText = json.candidates && json.candidates.length > 0 ? json.candidates[0].content.parts[0].text : "응답을 받을 수 없습니다.";
+      
+      // ✨ 에러의 진짜 원인을 반환하도록 로직 개선
+      var replyText = "응답을 받을 수 없습니다.";
+      if (json.candidates && json.candidates.length > 0) {
+        replyText = json.candidates[0].content.parts[0].text;
+      } else if (json.error) {
+        replyText = "⚠️ AI API 오류: " + json.error.message;
+      } else {
+        replyText = "⚠️ 알 수 없는 오류: " + JSON.stringify(json);
+      }
       
       return ContentService.createTextOutput(JSON.stringify({"result": "success", "text": replyText})).setMimeType(ContentService.MimeType.JSON);
     }
@@ -284,18 +294,19 @@ function doPost(e) {
       if (!sheet) sheet = ss.insertSheet('Plants');
       
       if (sheet.getLastRow() === 0) {
-        sheet.appendRow(['Timestamp', '식물ID', '식물명', '키우는곳', '화분종류', '주기(JSON)', '예정일(JSON)', '사진URL', '생성일', '앨범(JSON)']);
+        sheet.appendRow(['Timestamp', '식물ID', '식물명', '키우는곳', '화분종류', '주기(JSON)', '예정일(JSON)', '사진URL', '생성일', '앨범(JSON)', 'AI가이드']);
       }
       
       var values = sheet.getDataRange().getValues();
       var isUpdated = false;
       var photosJson = data.photos ? JSON.stringify(data.photos) : "[]";
+      var aiGuideText = data.aiGuide || "";
 
       for (var i = 1; i < values.length; i++) {
         if (values[i][1] == data.plantId) {
-          sheet.getRange(i+1, 1, 1, 10).setValues([[
+          sheet.getRange(i+1, 1, 1, 11).setValues([[
             data.timestamp, data.plantId, data.plantName, data.location, data.potType,
-            JSON.stringify(data.cycles), JSON.stringify(data.tasks), imageUrl, data.createdAt, photosJson
+            JSON.stringify(data.cycles), JSON.stringify(data.tasks), imageUrl, data.createdAt, photosJson, aiGuideText
           ]]);
           isUpdated = true; break;
         }
@@ -303,7 +314,7 @@ function doPost(e) {
       if (!isUpdated) {
         sheet.appendRow([
           data.timestamp, data.plantId, data.plantName, data.location, data.potType,
-          JSON.stringify(data.cycles), JSON.stringify(data.tasks), imageUrl, data.createdAt, photosJson
+          JSON.stringify(data.cycles), JSON.stringify(data.tasks), imageUrl, data.createdAt, photosJson, aiGuideText
         ]);
       }
     } 
@@ -490,6 +501,7 @@ function doPost(e) {
                             cycles: item.cycles ? JSON.parse(item.cycles) : { ...defC },
                             tasks: item.tasks ? JSON.parse(item.tasks) : {},
                             photos: item.photos ? JSON.parse(item.photos) : [],
+                            aiGuide: item.aiGuide || '', // ✨ AI 가이드 로드
                             imageBase64: item.imageUrl,
                             createdAt: item.createdAt,
                             photo: item.imageUrl ? '' : '🌱',
@@ -638,6 +650,7 @@ function doPost(e) {
                             cycles: plant.cycles || {},
                             tasks: plant.tasks || {},
                             photos: plant.photos || [],
+                            aiGuide: plant.aiGuide || '', // ✨ AI 가이드 전송
                             createdAt: plant.createdAt,
                             imageBase64: plant.imageBase64 
                         })
@@ -784,6 +797,33 @@ function doPost(e) {
                 }
             };
 
+            // ✨ 내 식물 전용 맞춤 AI 가이드 생성 핸들러
+            const handleGeneratePlantGuide = async () => {
+                if (!editingPlant) return;
+                setIsSavingPlant(true);
+                try {
+                    const match = editingPlant.name.match(/\(([^)]+)\)$/);
+                    const speciesName = match ? match[1] : editingPlant.name;
+
+                    const systemPrompt = "당신은 최고의 식물 전문가입니다. 사용자가 제공한 식물에 대한 핵심 관리법(햇빛 양, 적정 온도, 물주는 주기, 주요 주의사항)을 가독성 좋은 마크다운(볼드체, 불릿 등)으로 3~4문단 정도로 깔끔하게 요약해주세요.";
+                    const userPrompt = `식물 종류: ${speciesName}\n이 식물의 맞춤형 관리 핵심 요약 가이드를 작성해줘.`;
+                    
+                    const response = await callGeminiAPI(userPrompt, systemPrompt);
+                    
+                    const updatedPlant = { ...editingPlant, aiGuide: response };
+                    setEditingPlant(updatedPlant);
+                    setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
+                    
+                    await syncPlantToSheet(updatedPlant);
+                    showAlert('맞춤형 가이드가 생성되어 영구 저장되었습니다!', 'success');
+                } catch (error) {
+                    console.error("AI Guide Error:", error);
+                    showAlert('가이드를 생성하는 중 오류가 발생했습니다.', 'error');
+                } finally {
+                    setIsSavingPlant(false);
+                }
+            };
+
             const handleAddPlant = async () => {
                 if (!newPlantForm.species.trim()) return showAlert('식물 종류를 입력해주세요.', 'error');
                 
@@ -816,7 +856,8 @@ function doPost(e) {
                         nutrient: nextNutrientDate.toISOString().split('T')[0],
                         repot: nextRepotDate.toISOString().split('T')[0],
                     },
-                    photos: [] 
+                    photos: [],
+                    aiGuide: '' // ✨ 초기 AI 가이드 빈칸
                 };
 
                 setPlants([...plants, newPlant]);
@@ -1649,8 +1690,9 @@ function doPost(e) {
                                 
                                 {/* 탭 스위치 */}
                                 <div className="flex bg-gray-100 p-1 mx-5 mt-4 rounded-xl mb-2">
-                                    <button onClick={() => setDetailTab('info')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${detailTab === 'info' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}>상세 정보</button>
-                                    <button onClick={() => setDetailTab('album')} className={`flex-1 py-2 rounded-lg text-sm font-bold transition-all ${detailTab === 'album' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}>🌱 성장 앨범</button>
+                                    <button onClick={() => setDetailTab('info')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${detailTab === 'info' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}>상세 정보</button>
+                                    <button onClick={() => setDetailTab('album')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all ${detailTab === 'album' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}>🌱 성장 앨범</button>
+                                    <button onClick={() => setDetailTab('guide')} className={`flex-1 py-2 rounded-lg text-xs font-bold transition-all flex justify-center items-center ${detailTab === 'guide' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`}><span className="mr-1">📖</span> 가이드</button>
                                 </div>
 
                                 <div className="p-5 overflow-y-auto flex-1 space-y-4">
@@ -1775,6 +1817,49 @@ function doPost(e) {
                                                     </div>
                                                 )}
                                             </div>
+                                        </div>
+                                    )}
+
+                                    {/* ✨ 맞춤 관리 가이드 탭 */}
+                                    {detailTab === 'guide' && (
+                                        <div className="fade-in min-h-[40vh] flex flex-col">
+                                            <div className="bg-emerald-50 rounded-xl p-4 mb-4 border border-emerald-100">
+                                                <div className="flex items-center space-x-2 mb-2">
+                                                    <span className="text-xl">🌿</span>
+                                                    <h4 className="font-bold text-emerald-800 text-sm">{editingPlant.name} 맞춤 가이드</h4>
+                                                </div>
+                                                <p className="text-xs text-emerald-600 mb-3 leading-relaxed">AI가 이 식물에 딱 맞는 핵심 관리법을 정리해 드립니다. 한 번 생성하면 시트에 영구 저장됩니다!</p>
+                                                
+                                                {(!editingPlant.aiGuide) && (
+                                                    <button 
+                                                        onClick={handleGeneratePlantGuide} 
+                                                        disabled={isSavingPlant}
+                                                        className="w-full py-3 rounded-lg font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors shadow-sm flex justify-center items-center text-sm"
+                                                    >
+                                                        {isSavingPlant ? <><span className="w-4 h-4 border-2 border-white rounded-full loader mr-2"></span> 분석 및 저장 중...</> : '✨ AI 맞춤 가이드 생성하기'}
+                                                    </button>
+                                                )}
+                                            </div>
+
+                                            {editingPlant.aiGuide && (
+                                                <div className="flex-1 bg-white border border-gray-100 rounded-xl p-5 shadow-sm text-sm text-gray-700 leading-relaxed whitespace-pre-wrap overflow-y-auto relative">
+                                                    <button 
+                                                        onClick={handleGeneratePlantGuide}
+                                                        disabled={isSavingPlant}
+                                                        className="absolute top-4 right-4 text-gray-400 hover:text-emerald-500 transition-colors bg-white rounded-full p-1 shadow-sm border border-gray-100"
+                                                        title="가이드 다시 생성하기"
+                                                    >
+                                                        <svg className={`w-4 h-4 ${isSavingPlant ? 'animate-spin text-emerald-500' : ''}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15"/></svg>
+                                                    </button>
+                                                    {editingPlant.aiGuide.split('\n').map((line, i) => (
+                                                        <p key={i} className="mb-2">
+                                                            {line.split(/(\*\*.*?\*\*)/).map((part, j) => 
+                                                                part.startsWith('**') && part.endsWith('**') ? <strong key={j} className="text-emerald-700 font-extrabold">{part.slice(2, -2)}</strong> : part
+                                                            )}
+                                                        </p>
+                                                    ))}
+                                                </div>
+                                            )}
                                         </div>
                                     )}
                                 </div>
