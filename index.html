@@ -195,7 +195,13 @@
 
         const GuideModal = ({ isOpen, onClose }) => {
             if (!isOpen) return null;
-            const scriptCode = `function doGet(e) {
+            const scriptCode = `// ✨ 이 함수를 실행하여 구글 드라이브 접근 권한을 무조건 활성화합니다!
+function setup() {
+  DriveApp.getRootFolder();
+  console.log("✅ 구글 드라이브 권한 허용 완료! 이제 앱에서 사진 저장이 가능합니다.");
+}
+
+function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var pSheet = ss.getSheetByName('Plants');
   var plants = [];
@@ -322,6 +328,8 @@ function doPost(e) {
     }
 
     var imageUrl = data.imageBase64 || "";
+    
+    // 🚨 아래 변수에 폴더 ID를 넣은 후, 반드시 우측 상단의 [배포] -> [새 배포]를 클릭해야만 적용됩니다! 🚨
     var FOLDER_ID = "여기에_구글드라이브_폴더_ID를_넣으세요"; 
 
     // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진 - 안전장치 추가!)
@@ -429,13 +437,13 @@ function doPost(e) {
                             <ol className="list-decimal list-inside space-y-3 text-sm text-gray-700">
                                 <li>내 구글 드라이브에 <strong className="text-emerald-600">새 폴더</strong>를 만들고 공유 권한을 <strong className="text-emerald-600">'링크가 있는 모든 사용자'</strong>로 변경합니다.</li>
                                 <li>해당 폴더 주소의 끝부분(<strong className="text-red-500">폴더 ID</strong>)을 복사하여 아래 코드의 <code className="bg-gray-100 px-1 rounded text-red-500">FOLDER_ID</code> 에 붙여넣습니다.</li>
-                                <li><strong className="text-purple-600">다수의 Gemini API 키</strong>를 쉼표로 구분하여 <code className="bg-gray-100 px-1 rounded text-purple-600">API_KEYS</code> 배열에 여러 개 넣을 수 있습니다. (한도 초과 시 자동 교체됨)</li>
-                                <li>변경된 아래 <strong>전체 코드를 복사</strong>하여 기존 구글 스프레드시트 Apps Script 편집기에 <strong className="text-red-500">완전히 덮어쓰기</strong> 합니다.</li>
-                                <li><strong className="text-red-500">정말 중요 ⭐:</strong> 구글 스크립트 편집기 상단에서 <strong>'doGet' 함수를 선택하고 [▷ 실행] 버튼을 눌러서 '권한 검토' 팝업을 띄우고 권한을 허용</strong>해 주셔야만 사진 저장(DriveApp)이 작동합니다!</li>
+                                <li><strong className="text-purple-600">다수의 Gemini API 키</strong>를 쉼표로 구분하여 <code className="bg-gray-100 px-1 rounded text-purple-600">API_KEYS</code> 배열에 여러 개 넣습니다.</li>
+                                <li>변경된 아래 <strong>전체 코드를 복사</strong>하여 구글 스크립트 편집기에 <strong className="text-red-500">완전히 덮어쓰기</strong> 합니다.</li>
+                                <li className="bg-red-50 p-2 rounded border border-red-100"><strong className="text-red-600">가장 중요 ⭐:</strong> 스크립트 편집기 상단 중앙의 함수 선택 박스에서 <strong className="text-red-600">`setup` 함수를 선택하고 [▷ 실행] 버튼을 눌러주세요.</strong> 팝업창이 뜨면 권한 검토를 눌러 접근을 허용해야 사진이 업로드됩니다!</li>
                                 <div className="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono my-2 relative">
                                     <pre>{scriptCode}</pre>
                                 </div>
-                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(안전 저장 로직)이 완벽히 적용됩니다!</li>
+                                <li>반드시 우측 상단의 <strong>[배포] {'>'} [새 배포]</strong>를 눌러 완전히 새로운 버전을 등록해 주세요!</li>
                             </ol>
                         </div>
                     </div>
