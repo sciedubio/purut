@@ -230,16 +230,12 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // ✨ 0. AI 진단 요청인 경우 (API 키 릴레이 & 모델 자동 우회 하이브리드 로직)
+    // ✨ 0. AI 진단 요청인 경우
     if (data.recordType === 'ai_query') {
-      
-      // 💡 여기에 발급받은 API 키를 쉼표로 구분해서 여러 개 넣으세요! (1개만 써도 됩니다)
       var API_KEYS = [
         "여기에_첫번째_API_키를_넣으세요",
         "여기에_두번째_API_키를_넣으세요_없으면_지우세요"
       ];
-      
-      // 💡 기본 모델인 flash가 한도 초과(에러)가 나면, 더 가볍고 빠른 flash-lite로 자동 우회합니다.
       var MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
       var parts = [{ text: data.prompt }];
@@ -259,11 +255,10 @@ function doPost(e) {
       var replyText = "응답을 받을 수 없습니다.";
       var success = false;
 
-      // 🔄 여러 개의 키와 모델을 번갈아가며 시도하는 로직 (에러 완벽 회피)
       for (var i = 0; i < API_KEYS.length; i++) {
         if (success) break;
         var key = API_KEYS[i].trim();
-        if (!key || key.indexOf("여기에_") !== -1) continue; // 안 넣은 키는 무시
+        if (!key || key.indexOf("여기에_") !== -1) continue;
 
         for (var j = 0; j < MODELS.length; j++) {
           if (success) break;
@@ -274,21 +269,18 @@ function doPost(e) {
           var responseCode = response.getResponseCode();
           var json = JSON.parse(response.getContentText());
 
-          // 성공적으로 답변을 받았을 때
           if (responseCode === 200 && json.candidates && json.candidates.length > 0) {
             replyText = json.candidates[0].content.parts[0].text;
             success = true;
           } else {
-            // 에러가 났다면 다음 모델(또는 다음 키)로 넘어가서 다시 시도함
             replyText = "⚠️ AI 오류 (" + model + "): " + (json.error ? json.error.message : "한도 초과");
           }
         }
       }
-      
       return ContentService.createTextOutput(JSON.stringify({"result": "success", "text": replyText})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // ✨ 1. 식물 삭제 요청 처리
+    // ✨ 1. 식물 삭제 요청
     if (data.recordType === 'delete_plant') {
       var sheet = ss.getSheetByName('Plants');
       if (sheet) {
@@ -303,7 +295,7 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({"result": "deleted"})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // ✨ 2. 노트 추가 요청 처리
+    // ✨ 2. 노트 추가 요청
     if (data.recordType === 'add_note') {
       var sheet = ss.getSheetByName('Notes');
       if (!sheet) {
@@ -314,7 +306,7 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({"result": "success"})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    // ✨ 3. 노트 삭제 요청 처리
+    // ✨ 3. 노트 삭제 요청
     if (data.recordType === 'delete_note') {
       var sheet = ss.getSheetByName('Notes');
       if (sheet) {
@@ -332,37 +324,46 @@ function doPost(e) {
     var imageUrl = data.imageBase64 || "";
     var FOLDER_ID = "여기에_구글드라이브_폴더_ID를_넣으세요"; 
 
-    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진)
+    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진 - 안전장치 추가!)
     if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
-      try {
-        if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
-            var folder = DriveApp.getFolderById(FOLDER_ID);
-            var contentType = data.imageBase64.substring(5, data.imageBase64.indexOf(';'));
-            var bytes = Utilities.base64Decode(data.imageBase64.split(',')[1]);
-            var blob = Utilities.newBlob(bytes, contentType, data.plantName + "_profile_" + new Date().getTime());
-            var file = folder.createFile(blob);
-            file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-            imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
+      if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
+        try {
+          var folder = DriveApp.getFolderById(FOLDER_ID);
+          var contentType = data.imageBase64.substring(5, data.imageBase64.indexOf(';'));
+          var bytes = Utilities.base64Decode(data.imageBase64.split(',')[1]);
+          var blob = Utilities.newBlob(bytes, contentType, data.plantName + "_profile_" + new Date().getTime());
+          var file = folder.createFile(blob);
+          file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+          imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
+        } catch(driveError) { 
+          // 🚨 에러 발생 시, base64 텍스트 대신 짧은 에러 텍스트 저장 (시트 뻗음 방지)
+          imageUrl = "업로드실패_권한또는ID에러";
         }
-      } catch(driveError) { }
+      } else {
+        imageUrl = "업로드실패_폴더ID미입력";
+      }
     }
 
-    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열 처리!)
+    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열 처리 - 안전장치 추가!)
     if (data.photos && Array.isArray(data.photos)) {
       for (var k = 0; k < data.photos.length; k++) {
-        // base64로 날아온 새 앨범 사진이 있다면 구글 드라이브에 업로드하고 URL로 변환!
         if (data.photos[k].url && data.photos[k].url.indexOf('data:image') === 0) {
-          try {
-            if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
-                var folder = DriveApp.getFolderById(FOLDER_ID);
-                var pContentType = data.photos[k].url.substring(5, data.photos[k].url.indexOf(';'));
-                var pBytes = Utilities.base64Decode(data.photos[k].url.split(',')[1]);
-                var pBlob = Utilities.newBlob(pBytes, pContentType, data.plantName + "_album_" + new Date().getTime() + "_" + k);
-                var pFile = folder.createFile(pBlob);
-                pFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-                data.photos[k].url = "https://drive.google.com/uc?export=view&id=" + pFile.getId(); // 드라이브 주소로 바꿔치기
+          if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
+            try {
+              var folder = DriveApp.getFolderById(FOLDER_ID);
+              var pContentType = data.photos[k].url.substring(5, data.photos[k].url.indexOf(';'));
+              var pBytes = Utilities.base64Decode(data.photos[k].url.split(',')[1]);
+              var pBlob = Utilities.newBlob(pBytes, pContentType, data.plantName + "_album_" + new Date().getTime() + "_" + k);
+              var pFile = folder.createFile(pBlob);
+              pFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+              data.photos[k].url = "https://drive.google.com/uc?export=view&id=" + pFile.getId(); 
+            } catch(driveError) { 
+              // 🚨 앨범 사진도 에러 발생 시 베이스64 대신 에러 텍스트 저장
+              data.photos[k].url = "업로드실패_권한또는ID에러";
             }
-          } catch(driveError) { }
+          } else {
+            data.photos[k].url = "업로드실패_폴더ID미입력";
+          }
         }
       }
     }
@@ -430,11 +431,11 @@ function doPost(e) {
                                 <li>해당 폴더 주소의 끝부분(<strong className="text-red-500">폴더 ID</strong>)을 복사하여 아래 코드의 <code className="bg-gray-100 px-1 rounded text-red-500">FOLDER_ID</code> 에 붙여넣습니다.</li>
                                 <li><strong className="text-purple-600">다수의 Gemini API 키</strong>를 쉼표로 구분하여 <code className="bg-gray-100 px-1 rounded text-purple-600">API_KEYS</code> 배열에 여러 개 넣을 수 있습니다. (한도 초과 시 자동 교체됨)</li>
                                 <li>변경된 아래 <strong>전체 코드를 복사</strong>하여 기존 구글 스프레드시트 Apps Script 편집기에 <strong className="text-red-500">완전히 덮어쓰기</strong> 합니다.</li>
-                                <li><strong className="text-red-500">중요:</strong> 스크립트 편집기 상단 <strong>[▷ 실행]</strong> 버튼을 눌러 나오는 팝업에서 <strong>권한 검토 {'>'} 고급 {'>'} (안전하지 않음)으로 이동</strong>을 눌러 권한을 허용해 주세요.</li>
+                                <li><strong className="text-red-500">정말 중요 ⭐:</strong> 구글 스크립트 편집기 상단에서 <strong>'doGet' 함수를 선택하고 [▷ 실행] 버튼을 눌러서 '권한 검토' 팝업을 띄우고 권한을 허용</strong>해 주셔야만 사진 저장(DriveApp)이 작동합니다!</li>
                                 <div className="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono my-2 relative">
                                     <pre>{scriptCode}</pre>
                                 </div>
-                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(무적의 AI 자동우회 로직)이 완벽히 적용됩니다!</li>
+                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(안전 저장 로직)이 완벽히 적용됩니다!</li>
                             </ol>
                         </div>
                     </div>
@@ -588,7 +589,7 @@ function doPost(e) {
                             aiGuide: item.aiGuide || '', 
                             imageBase64: item.imageUrl,
                             createdAt: item.createdAt,
-                            photo: item.imageUrl ? '' : '🌱',
+                            photo: item.imageUrl && !item.imageUrl.includes('업로드실패') ? '' : '🌱',
                             color: 'bg-green-100' 
                         }));
                         setPlants(loadedPlants); 
@@ -673,7 +674,7 @@ function doPost(e) {
                 reader.readAsDataURL(file);
             };
 
-            // ✨ 성장 앨범 사진 업로드 기능 (에러 완벽 개선)
+            // ✨ 성장 앨범 사진 업로드 기능 (에러 알림 추가)
             const handleAlbumUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -703,14 +704,19 @@ function doPost(e) {
                         const syncResult = await syncPlantToSheet(updatedPlant);
                         setIsSavingPlant(false);
 
-                        // 서버가 보내준 가볍고 안전한 구글 드라이브 URL 배열로 로컬 데이터 교체!
+                        // 서버가 보내준 URL 배열로 로컬 데이터 교체
                         if (syncResult && syncResult.photos) {
+                            // ✨ 사진 저장 실패(권한/ID 문제) 시 알림 띄우기
+                            const hasError = syncResult.photos.some(p => p.url && p.url.includes('업로드실패'));
+                            if (hasError) {
+                                showAlert('사진 저장 실패! 가이드 5번(구글 스크립트 ▷실행 권한 허용)을 꼭 확인해주세요.', 'error');
+                            } else {
+                                showAlert('앨범 사진이 안전하게 클라우드에 저장되었습니다!', 'success');
+                            }
+
                             const finalPlant = { ...updatedPlant, photos: syncResult.photos };
                             setEditingPlant(finalPlant);
                             setPlants(prev => prev.map(p => p.id === finalPlant.id ? finalPlant : p));
-                            showAlert('앨범 사진이 안전하게 클라우드에 저장되었습니다!', 'success');
-                        } else {
-                            showAlert('앨범 사진 로컬 저장 완료. (동기화 지연)', 'success');
                         }
                     };
                     img.src = event.target.result;
@@ -971,8 +977,17 @@ function doPost(e) {
                 const syncResult = await syncPlantToSheet(newPlant);
                 if (syncResult && GOOGLE_SCRIPT_URL) {
                     let needsUpdate = false;
-                    if (syncResult.imageUrl) { newPlant.imageBase64 = syncResult.imageUrl; needsUpdate = true; }
-                    if (syncResult.photos) { newPlant.photos = syncResult.photos; needsUpdate = true; }
+                    if (syncResult.imageUrl) { 
+                        if (syncResult.imageUrl.includes('업로드실패')) {
+                            showAlert('프로필 사진 저장 실패! 가이드 5번(권한 허용)을 꼭 확인해주세요.', 'error');
+                        }
+                        newPlant.imageBase64 = syncResult.imageUrl; 
+                        needsUpdate = true; 
+                    }
+                    if (syncResult.photos) { 
+                        newPlant.photos = syncResult.photos; 
+                        needsUpdate = true; 
+                    }
                     if (needsUpdate) {
                         setPlants(prev => prev.map(p => p.id === newPlant.id ? newPlant : p));
                     }
@@ -992,10 +1007,15 @@ function doPost(e) {
                 if (syncResult) {
                     let needsUpdate = false;
                     if (syncResult.imageUrl && syncResult.imageUrl !== updatedPlant.imageBase64) {
-                        updatedPlant.imageBase64 = syncResult.imageUrl; needsUpdate = true;
+                        if (syncResult.imageUrl.includes('업로드실패')) {
+                            showAlert('프로필 사진 저장 실패! 가이드 5번(권한 허용)을 꼭 확인해주세요.', 'error');
+                        }
+                        updatedPlant.imageBase64 = syncResult.imageUrl; 
+                        needsUpdate = true;
                     }
                     if (syncResult.photos) {
-                        updatedPlant.photos = syncResult.photos; needsUpdate = true;
+                        updatedPlant.photos = syncResult.photos; 
+                        needsUpdate = true;
                     }
                     if (needsUpdate) {
                         setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
@@ -1486,8 +1506,8 @@ function doPost(e) {
                                                 <svg className="w-4 h-4" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"/></svg>
                                             </div>
                                             <div className="relative mb-3">
-                                                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl overflow-hidden bg-cover bg-center ${plant.color}`} style={plant.imageBase64 ? { backgroundImage: `url(${plant.imageBase64})` } : {}}>
-                                                    {!plant.imageBase64 && (plant.photo || '🌿')}
+                                                <div className={`w-16 h-16 rounded-full flex items-center justify-center text-3xl overflow-hidden bg-cover bg-center ${plant.color}`} style={plant.imageBase64 && !plant.imageBase64.includes('업로드실패') ? { backgroundImage: `url(${plant.imageBase64})` } : {}}>
+                                                    {(!plant.imageBase64 || plant.imageBase64.includes('업로드실패')) && (plant.photo || '🌿')}
                                                 </div>
                                                 {plant.createdAt && <div className="absolute -top-1 -right-1 bg-emerald-500 text-white text-[10px] font-bold px-2 py-0.5 rounded-full shadow-sm border border-white z-10">{calculateDday(plant.createdAt)}</div>}
                                             </div>
@@ -1742,8 +1762,8 @@ function doPost(e) {
                                 <div className="space-y-4">
                                     <div className="flex flex-col items-center mb-2">
                                         <label className="cursor-pointer group relative">
-                                            <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl bg-green-100 overflow-hidden bg-cover bg-center shadow-inner border-2 border-dashed border-emerald-300 group-hover:border-emerald-500 transition-colors`} style={newPlantForm.imageBase64 ? { backgroundImage: `url(${newPlantForm.imageBase64})` } : {}}>
-                                                {!newPlantForm.imageBase64 && (newPlantForm.photo || '📷')}
+                                            <div className={`w-20 h-20 rounded-full flex items-center justify-center text-3xl bg-green-100 overflow-hidden bg-cover bg-center shadow-inner border-2 border-dashed border-emerald-300 group-hover:border-emerald-500 transition-colors`} style={newPlantForm.imageBase64 && !newPlantForm.imageBase64.includes('업로드실패') ? { backgroundImage: `url(${newPlantForm.imageBase64})` } : {}}>
+                                                {(!newPlantForm.imageBase64 || newPlantForm.imageBase64.includes('업로드실패')) && (newPlantForm.photo || '📷')}
                                             </div>
                                             <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-20 rounded-full flex items-center justify-center transition-all">
                                                 <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100">사진 등록</span>
@@ -1765,7 +1785,7 @@ function doPost(e) {
                                     <div className="grid grid-cols-3 gap-3">
                                         <div className="col-span-1">
                                             <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">이모지</label>
-                                            <input type="text" value={newPlantForm.photo} onChange={e => setNewPlantForm({...newPlantForm, photo: e.target.value, imageBase64: null})} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-center text-xl outline-none focus:border-emerald-500 focus:bg-white transition-colors" placeholder="🌱" disabled={!!newPlantForm.imageBase64} />
+                                            <input type="text" value={newPlantForm.photo} onChange={e => setNewPlantForm({...newPlantForm, photo: e.target.value, imageBase64: null})} className="w-full bg-gray-50 border border-gray-100 rounded-xl px-4 py-3 text-center text-xl outline-none focus:border-emerald-500 focus:bg-white transition-colors" placeholder="🌱" disabled={!!newPlantForm.imageBase64 && !newPlantForm.imageBase64.includes('업로드실패')} />
                                         </div>
                                         <div className="col-span-2">
                                             <label className="block text-sm font-bold text-gray-700 mb-1.5 ml-1">키우는 곳</label>
@@ -1833,8 +1853,8 @@ function doPost(e) {
                                         <div className="fade-in space-y-4">
                                             <div className="flex flex-col items-center mb-2">
                                                 <label className="cursor-pointer group relative">
-                                                    <div className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl bg-green-100 overflow-hidden bg-cover bg-center shadow-inner border-2 border-dashed border-gray-200 group-hover:border-emerald-500 transition-colors`} style={editingPlant.imageBase64 ? { backgroundImage: `url(${editingPlant.imageBase64})` } : {}}>
-                                                        {!editingPlant.imageBase64 && (editingPlant.photo || '📷')}
+                                                    <div className={`w-24 h-24 rounded-full flex items-center justify-center text-4xl bg-green-100 overflow-hidden bg-cover bg-center shadow-inner border-2 border-dashed border-gray-200 group-hover:border-emerald-500 transition-colors`} style={editingPlant.imageBase64 && !editingPlant.imageBase64.includes('업로드실패') ? { backgroundImage: `url(${editingPlant.imageBase64})` } : {}}>
+                                                        {(!editingPlant.imageBase64 || editingPlant.imageBase64.includes('업로드실패')) && (editingPlant.photo || '📷')}
                                                     </div>
                                                     <div className="absolute inset-0 bg-black bg-opacity-0 group-hover:bg-opacity-30 rounded-full flex items-center justify-center transition-all">
                                                         <span className="text-white text-xs font-bold opacity-0 group-hover:opacity-100">프로필 변경</span>
@@ -1937,7 +1957,9 @@ function doPost(e) {
                                                 {editingPlant.photos && editingPlant.photos.length > 0 ? (
                                                     editingPlant.photos.map((pic, idx) => (
                                                         <div key={idx} className="relative rounded-xl overflow-hidden shadow-sm aspect-square bg-gray-100 group border border-gray-100">
-                                                            <div className="w-full h-full bg-cover bg-center" style={{backgroundImage: `url(${pic.url})`}}></div>
+                                                            <div className="w-full h-full bg-cover bg-center" style={{backgroundImage: `url(${pic.url && !pic.url.includes('업로드실패') ? pic.url : ''})`}}>
+                                                                {pic.url && pic.url.includes('업로드실패') && <div className="absolute inset-0 flex items-center justify-center text-xs text-red-400 text-center p-2 bg-red-50">저장 실패<br/>(권한/ID)</div>}
+                                                            </div>
                                                             <div className="absolute bottom-0 w-full bg-gradient-to-t from-black to-transparent p-2 pt-6">
                                                                 <span className="text-white text-[10px] font-bold drop-shadow-md">{pic.date}</span>
                                                             </div>
