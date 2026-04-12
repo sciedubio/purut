@@ -43,7 +43,7 @@
         // ==========================================
         // ⚙️ 설정 구역: 구글 스크립트 웹앱 URL 입력
         // ==========================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz6OhhQig_wIWa98u-rzJiylF0r47SfM35O1oDl9kS9E1HCmdm2YKROGH7s118SkIvo/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyDs_TkYHOdGTx-5vnuY55CnwDdY3z0sIJcyh9ywlebccvBvmTAg-pK9_4y6fUrQ34V/exec"; 
 
         // ✨ Gemini AI 호출
         const callGeminiAPI = async (prompt, systemInstruction = "You are a helpful assistant.", imageBase64 = null) => {
@@ -195,10 +195,12 @@
 
         const GuideModal = ({ isOpen, onClose }) => {
             if (!isOpen) return null;
-            const scriptCode = `// ✨ 이 함수를 실행하여 구글 드라이브 접근 권한을 무조건 활성화합니다!
+            const scriptCode = `// ✨ 이 함수를 실행하여 구글 드라이브 '파일 생성' 권한을 확실하게 부여받습니다!
 function setup() {
-  DriveApp.getRootFolder();
-  console.log("✅ 구글 드라이브 권한 허용 완료! 이제 앱에서 사진 저장이 가능합니다.");
+  // 실제 파일을 하나 만들고 휴지통에 버리는 과정으로 권한을 100% 강제 활성화합니다.
+  var temp = DriveApp.createFile("퍼릇_권한테스트.txt", "이 파일은 삭제하셔도 됩니다.");
+  temp.setTrashed(true); 
+  console.log("✅ 구글 드라이브 권한 완벽 허용 완료! 이제 앱에서 사진 저장이 가능합니다.");
 }
 
 function doGet(e) {
