@@ -230,10 +230,17 @@ function doPost(e) {
     var data = JSON.parse(e.postData.contents);
     var ss = SpreadsheetApp.getActiveSpreadsheet();
     
-    // ✨ 0. AI 진단 요청인 경우 (Gemini API 안전 호출)
+    // ✨ 0. AI 진단 요청인 경우 (API 키 릴레이 & 모델 자동 우회 하이브리드 로직)
     if (data.recordType === 'ai_query') {
-      var API_KEY = "여기에_GEMINI_API_키를_넣으세요"; // ⬅️ 반드시 본인 키로 변경하세요!
-      var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + API_KEY;
+      
+      // 💡 여기에 발급받은 API 키를 쉼표로 구분해서 여러 개 넣으세요! (1개만 써도 됩니다)
+      var API_KEYS = [
+        "여기에_첫번째_API_키를_넣으세요",
+        "여기에_두번째_API_키를_넣으세요_없으면_지우세요"
+      ];
+      
+      // 💡 기본 모델인 flash가 한도 초과(에러)가 나면, 더 가볍고 빠른 flash-lite로 자동 우회합니다.
+      var MODELS = ["gemini-2.5-flash", "gemini-2.5-flash-lite"];
 
       var parts = [{ text: data.prompt }];
       if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
@@ -248,16 +255,34 @@ function doPost(e) {
       };
 
       var options = { method: "post", contentType: "application/json", payload: JSON.stringify(payload), muteHttpExceptions: true };
-      var response = UrlFetchApp.fetch(url, options);
-      var json = JSON.parse(response.getContentText());
       
       var replyText = "응답을 받을 수 없습니다.";
-      if (json.candidates && json.candidates.length > 0) {
-        replyText = json.candidates[0].content.parts[0].text;
-      } else if (json.error) {
-        replyText = "⚠️ AI API 오류: " + json.error.message;
-      } else {
-        replyText = "⚠️ 알 수 없는 오류: " + JSON.stringify(json);
+      var success = false;
+
+      // 🔄 여러 개의 키와 모델을 번갈아가며 시도하는 로직 (에러 완벽 회피)
+      for (var i = 0; i < API_KEYS.length; i++) {
+        if (success) break;
+        var key = API_KEYS[i].trim();
+        if (!key || key.indexOf("여기에_") !== -1) continue; // 안 넣은 키는 무시
+
+        for (var j = 0; j < MODELS.length; j++) {
+          if (success) break;
+          var model = MODELS[j];
+          var url = "https://generativelanguage.googleapis.com/v1beta/models/" + model + ":generateContent?key=" + key;
+          
+          var response = UrlFetchApp.fetch(url, options);
+          var responseCode = response.getResponseCode();
+          var json = JSON.parse(response.getContentText());
+
+          // 성공적으로 답변을 받았을 때
+          if (responseCode === 200 && json.candidates && json.candidates.length > 0) {
+            replyText = json.candidates[0].content.parts[0].text;
+            success = true;
+          } else {
+            // 에러가 났다면 다음 모델(또는 다음 키)로 넘어가서 다시 시도함
+            replyText = "⚠️ AI 오류 (" + model + "): " + (json.error ? json.error.message : "한도 초과");
+          }
+        }
       }
       
       return ContentService.createTextOutput(JSON.stringify({"result": "success", "text": replyText})).setMimeType(ContentService.MimeType.JSON);
@@ -403,13 +428,13 @@ function doPost(e) {
                             <ol className="list-decimal list-inside space-y-3 text-sm text-gray-700">
                                 <li>내 구글 드라이브에 <strong className="text-emerald-600">새 폴더</strong>를 만들고 공유 권한을 <strong className="text-emerald-600">'링크가 있는 모든 사용자'</strong>로 변경합니다.</li>
                                 <li>해당 폴더 주소의 끝부분(<strong className="text-red-500">폴더 ID</strong>)을 복사하여 아래 코드의 <code className="bg-gray-100 px-1 rounded text-red-500">FOLDER_ID</code> 에 붙여넣습니다.</li>
-                                <li>발급받으신 <strong className="text-purple-600">Gemini API 키</strong>를 아래 코드의 <code className="bg-gray-100 px-1 rounded text-purple-600">API_KEY</code> 에 붙여넣습니다.</li>
+                                <li><strong className="text-purple-600">다수의 Gemini API 키</strong>를 쉼표로 구분하여 <code className="bg-gray-100 px-1 rounded text-purple-600">API_KEYS</code> 배열에 여러 개 넣을 수 있습니다. (한도 초과 시 자동 교체됨)</li>
                                 <li>변경된 아래 <strong>전체 코드를 복사</strong>하여 기존 구글 스프레드시트 Apps Script 편집기에 <strong className="text-red-500">완전히 덮어쓰기</strong> 합니다.</li>
                                 <li><strong className="text-red-500">중요:</strong> 스크립트 편집기 상단 <strong>[▷ 실행]</strong> 버튼을 눌러 나오는 팝업에서 <strong>권한 검토 {'>'} 고급 {'>'} (안전하지 않음)으로 이동</strong>을 눌러 권한을 허용해 주세요.</li>
                                 <div className="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono my-2 relative">
                                     <pre>{scriptCode}</pre>
                                 </div>
-                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(AI 연동 및 새로운 앨범/가이드 저장소)이 완벽히 적용됩니다!</li>
+                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(무적의 AI 자동우회 로직)이 완벽히 적용됩니다!</li>
                             </ol>
                         </div>
                     </div>
