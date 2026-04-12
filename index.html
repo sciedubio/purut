@@ -329,8 +329,8 @@ function doPost(e) {
 
     var imageUrl = data.imageBase64 || "";
     
-    // 🚨 아래 변수에 폴더 ID를 넣은 후, 반드시 우측 상단의 [배포] -> [새 배포]를 클릭해야만 적용됩니다! 🚨
-    var FOLDER_ID = "여기에_구글드라이브_폴더_ID를_넣으세요"; 
+    // 🚨 코드에 폴더 ID를 직접 내장해두었습니다! 이제 API 키만 넣고 배포하시면 됩니다. 🚨
+    var FOLDER_ID = "1sZ2X_BVQpzf0scq-fVccDxGYRw_N4rHX"; 
 
     // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진 - 진짜 원인 추적기 탑재!)
     if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
@@ -436,7 +436,7 @@ function doPost(e) {
                         <div className="p-5 overflow-y-auto">
                             <ol className="list-decimal list-inside space-y-3 text-sm text-gray-700">
                                 <li>내 구글 드라이브에 <strong className="text-emerald-600">새 폴더</strong>를 만들고 공유 권한을 <strong className="text-emerald-600">'링크가 있는 모든 사용자'</strong>로 변경합니다.</li>
-                                <li>해당 폴더 주소의 끝부분(<strong className="text-red-500">폴더 ID</strong>)을 복사하여 아래 코드의 <code className="bg-gray-100 px-1 rounded text-red-500">FOLDER_ID</code> 에 붙여넣습니다.</li>
+                                <li>해당 폴더 주소의 끝부분(<strong className="text-red-500">폴더 ID</strong>)이 이미 코드에 입력되어 있습니다. API 키만 추가로 넣어주세요.</li>
                                 <li><strong className="text-purple-600">다수의 Gemini API 키</strong>를 쉼표로 구분하여 <code className="bg-gray-100 px-1 rounded text-purple-600">API_KEYS</code> 배열에 여러 개 넣습니다.</li>
                                 <li>변경된 아래 <strong>전체 코드를 복사</strong>하여 구글 스크립트 편집기에 <strong className="text-red-500">완전히 덮어쓰기</strong> 합니다.</li>
                                 <li className="bg-red-50 p-2 rounded border border-red-100"><strong className="text-red-600">가장 중요 ⭐:</strong> 스크립트 편집기 상단 중앙의 함수 선택 박스에서 <strong className="text-red-600">`setup` 함수를 선택하고 [▷ 실행] 버튼을 눌러주세요.</strong> 팝업창이 뜨면 권한 검토를 눌러 접근을 허용해야 사진이 업로드됩니다!</li>
@@ -1475,7 +1475,7 @@ function doPost(e) {
                                                             <div className="flex items-center space-x-4">
                                                                 <div className="relative">
                                                                     <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl overflow-hidden bg-cover bg-center ${plant.color}`} style={plant.imageBase64 && !plant.imageBase64.includes('업로드실패') ? { backgroundImage: `url(${plant.imageBase64})` } : {}}>
-                                                                        {(!plant.imageBase64 || plant.imageBase64.includes('업로드실패')) && (plant.photo || '🌿')}
+                                                                        {(!plant.imageBase64 || plant.imageBase64.includes('업로드실패')) && (plant.photo || <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>)}
                                                                     </div>
                                                                     {plant.createdAt && <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">{calculateDday(plant.createdAt)}</div>}
                                                                 </div>
