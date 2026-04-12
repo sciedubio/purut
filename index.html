@@ -305,16 +305,16 @@ function doPost(e) {
     }
 
     var imageUrl = data.imageBase64 || "";
+    var FOLDER_ID = "여기에_구글드라이브_폴더_ID를_넣으세요"; 
 
-    // 📸 구글 드라이브 이미지 업로드
+    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진)
     if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
-      var FOLDER_ID = "여기에_구글드라이브_폴더_ID를_넣으세요"; 
       try {
         if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
             var folder = DriveApp.getFolderById(FOLDER_ID);
             var contentType = data.imageBase64.substring(5, data.imageBase64.indexOf(';'));
             var bytes = Utilities.base64Decode(data.imageBase64.split(',')[1]);
-            var blob = Utilities.newBlob(bytes, contentType, data.plantName + "_" + new Date().getTime());
+            var blob = Utilities.newBlob(bytes, contentType, data.plantName + "_profile_" + new Date().getTime());
             var file = folder.createFile(blob);
             file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
             imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
@@ -322,7 +322,27 @@ function doPost(e) {
       } catch(driveError) { }
     }
 
-    // 4. 식물 정보 DB 업데이트 (시트2: Plants)
+    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열 처리!)
+    if (data.photos && Array.isArray(data.photos)) {
+      for (var k = 0; k < data.photos.length; k++) {
+        // base64로 날아온 새 앨범 사진이 있다면 구글 드라이브에 업로드하고 URL로 변환!
+        if (data.photos[k].url && data.photos[k].url.indexOf('data:image') === 0) {
+          try {
+            if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
+                var folder = DriveApp.getFolderById(FOLDER_ID);
+                var pContentType = data.photos[k].url.substring(5, data.photos[k].url.indexOf(';'));
+                var pBytes = Utilities.base64Decode(data.photos[k].url.split(',')[1]);
+                var pBlob = Utilities.newBlob(pBytes, pContentType, data.plantName + "_album_" + new Date().getTime() + "_" + k);
+                var pFile = folder.createFile(pBlob);
+                pFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
+                data.photos[k].url = "https://drive.google.com/uc?export=view&id=" + pFile.getId(); // 드라이브 주소로 바꿔치기
+            }
+          } catch(driveError) { }
+        }
+      }
+    }
+
+    // 5. 식물 정보 DB 업데이트 (시트2: Plants)
     if (data.recordType === 'plant') {
       var sheet = ss.getSheetByName('Plants');
       if (!sheet) sheet = ss.insertSheet('Plants');
@@ -352,7 +372,7 @@ function doPost(e) {
         ]);
       }
     } 
-    // 5. 일반 행동 로그 전송 (시트1: History)
+    // 6. 일반 행동 로그 전송 (시트1: History)
     else if (data.recordType === 'log') {
       var sheet = ss.getSheetByName('History');
       if (!sheet) sheet = ss.insertSheet('History');
@@ -360,7 +380,12 @@ function doPost(e) {
       sheet.appendRow([data.timestamp, data.plantName, data.taskType, data.action]);
     }
     
-    return ContentService.createTextOutput(JSON.stringify({"result": "success", "imageUrl": imageUrl})).setMimeType(ContentService.MimeType.JSON);
+    // 응답할 때, 드라이브 URL로 변환된 photos 배열을 같이 돌려줌!
+    return ContentService.createTextOutput(JSON.stringify({
+      "result": "success", 
+      "imageUrl": imageUrl,
+      "photos": data.photos || []
+    })).setMimeType(ContentService.MimeType.JSON);
   } catch(error) {
     return ContentService.createTextOutput(JSON.stringify({"error": error.message})).setMimeType(ContentService.MimeType.JSON);
   }
@@ -384,7 +409,7 @@ function doPost(e) {
                                 <div className="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono my-2 relative">
                                     <pre>{scriptCode}</pre>
                                 </div>
-                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(AI 연동 및 새로운 노트/가이드 저장소)이 완벽히 적용됩니다!</li>
+                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(AI 연동 및 새로운 앨범/가이드 저장소)이 완벽히 적용됩니다!</li>
                             </ol>
                         </div>
                     </div>
@@ -623,6 +648,7 @@ function doPost(e) {
                 reader.readAsDataURL(file);
             };
 
+            // ✨ 성장 앨범 사진 업로드 기능 (에러 완벽 개선)
             const handleAlbumUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -639,6 +665,7 @@ function doPost(e) {
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         const base64 = canvas.toDataURL('image/jpeg', 0.8);
                         
+                        // 로컬 임시로 화면에 먼저 띄우기 위해 base64 주소를 사용
                         const newPhotoObj = { date: new Date().toISOString().split('T')[0], url: base64 };
                         const updatedPhotos = [...(editingPlant.photos || []), newPhotoObj];
                         const updatedPlant = { ...editingPlant, photos: updatedPhotos };
@@ -646,10 +673,20 @@ function doPost(e) {
                         setEditingPlant(updatedPlant);
                         setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
                         
+                        // 서버로 전송 (이때 서버가 base64를 구글 드라이브 주소로 바꿔서 돌려줍니다!)
                         setIsSavingPlant(true);
-                        await syncPlantToSheet(updatedPlant);
+                        const syncResult = await syncPlantToSheet(updatedPlant);
                         setIsSavingPlant(false);
-                        showAlert('앨범에 사진이 추가되었습니다.', 'success');
+
+                        // 서버가 보내준 가볍고 안전한 구글 드라이브 URL 배열로 로컬 데이터 교체!
+                        if (syncResult && syncResult.photos) {
+                            const finalPlant = { ...updatedPlant, photos: syncResult.photos };
+                            setEditingPlant(finalPlant);
+                            setPlants(prev => prev.map(p => p.id === finalPlant.id ? finalPlant : p));
+                            showAlert('앨범 사진이 안전하게 클라우드에 저장되었습니다!', 'success');
+                        } else {
+                            showAlert('앨범 사진 로컬 저장 완료. (동기화 지연)', 'success');
+                        }
                     };
                     img.src = event.target.result;
                 };
@@ -907,9 +944,13 @@ function doPost(e) {
 
                 logActionToSheet(newPlant.name, 'water', '새 식물 등록');
                 const syncResult = await syncPlantToSheet(newPlant);
-                if (syncResult && syncResult.imageUrl && GOOGLE_SCRIPT_URL) {
-                    newPlant.imageBase64 = syncResult.imageUrl; 
-                    setPlants(prev => prev.map(p => p.id === newPlant.id ? newPlant : p));
+                if (syncResult && GOOGLE_SCRIPT_URL) {
+                    let needsUpdate = false;
+                    if (syncResult.imageUrl) { newPlant.imageBase64 = syncResult.imageUrl; needsUpdate = true; }
+                    if (syncResult.photos) { newPlant.photos = syncResult.photos; needsUpdate = true; }
+                    if (needsUpdate) {
+                        setPlants(prev => prev.map(p => p.id === newPlant.id ? newPlant : p));
+                    }
                 }
             };
 
@@ -923,9 +964,17 @@ function doPost(e) {
 
                 logActionToSheet(updatedPlant.name, '설정 변경', '주기/정보 수정됨');
                 const syncResult = await syncPlantToSheet(updatedPlant);
-                if (syncResult && syncResult.imageUrl && syncResult.imageUrl !== updatedPlant.imageBase64) {
-                    updatedPlant.imageBase64 = syncResult.imageUrl; 
-                    setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
+                if (syncResult) {
+                    let needsUpdate = false;
+                    if (syncResult.imageUrl && syncResult.imageUrl !== updatedPlant.imageBase64) {
+                        updatedPlant.imageBase64 = syncResult.imageUrl; needsUpdate = true;
+                    }
+                    if (syncResult.photos) {
+                        updatedPlant.photos = syncResult.photos; needsUpdate = true;
+                    }
+                    if (needsUpdate) {
+                        setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
+                    }
                 }
             };
 
