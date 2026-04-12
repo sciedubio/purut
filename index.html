@@ -43,7 +43,7 @@
         // ==========================================
         // ⚙️ 설정 구역: 구글 스크립트 웹앱 URL 입력
         // ==========================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbxP8SuiMh7hsXCkwvRkOqdwxSTCdcyjzj8rGWJGkhZORIpkfttKQNYPojy8EfqXU761/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbz6OhhQig_wIWa98u-rzJiylF0r47SfM35O1oDl9kS9E1HCmdm2YKROGH7s118SkIvo/exec"; 
 
         // ✨ Gemini AI 호출
         const callGeminiAPI = async (prompt, systemInstruction = "You are a helpful assistant.", imageBase64 = null) => {
@@ -332,7 +332,7 @@ function doPost(e) {
     // 🚨 아래 변수에 폴더 ID를 넣은 후, 반드시 우측 상단의 [배포] -> [새 배포]를 클릭해야만 적용됩니다! 🚨
     var FOLDER_ID = "여기에_구글드라이브_폴더_ID를_넣으세요"; 
 
-    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진 - 안전장치 추가!)
+    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진 - 진짜 원인 추적기 탑재!)
     if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
       if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
         try {
@@ -344,15 +344,15 @@ function doPost(e) {
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
         } catch(driveError) { 
-          // 🚨 에러 발생 시, base64 텍스트 대신 짧은 에러 텍스트 저장 (시트 뻗음 방지)
-          imageUrl = "업로드실패_권한또는ID에러";
+          // 🚨 에러 발생 시, 구글 스크립트가 뱉는 "진짜 에러 원인"을 그대로 포함시켜서 앱으로 돌려보냅니다.
+          imageUrl = "업로드실패_" + driveError.message;
         }
       } else {
         imageUrl = "업로드실패_폴더ID미입력";
       }
     }
 
-    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열 처리 - 안전장치 추가!)
+    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열 - 진짜 원인 추적기 탑재!)
     if (data.photos && Array.isArray(data.photos)) {
       for (var k = 0; k < data.photos.length; k++) {
         if (data.photos[k].url && data.photos[k].url.indexOf('data:image') === 0) {
@@ -366,8 +366,8 @@ function doPost(e) {
               pFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
               data.photos[k].url = "https://drive.google.com/uc?export=view&id=" + pFile.getId(); 
             } catch(driveError) { 
-              // 🚨 앨범 사진도 에러 발생 시 베이스64 대신 에러 텍스트 저장
-              data.photos[k].url = "업로드실패_권한또는ID에러";
+              // 🚨 앨범 사진도 에러 발생 시 에러 상세 원인 포함
+              data.photos[k].url = "업로드실패_" + driveError.message;
             }
           } else {
             data.photos[k].url = "업로드실패_폴더ID미입력";
@@ -443,7 +443,11 @@ function doPost(e) {
                                 <div className="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono my-2 relative">
                                     <pre>{scriptCode}</pre>
                                 </div>
-                                <li>반드시 우측 상단의 <strong>[배포] {'>'} [새 배포]</strong>를 눌러 완전히 새로운 버전을 등록해 주세요!</li>
+                                <li className="bg-red-50 p-2 rounded border border-red-100">
+                                    <strong className="text-red-600">배포 설정 확인 ⭐:</strong> 우측 상단의 <strong>[배포] {'>'} [새 배포]</strong>를 누른 후, 아래 2가지를 반드시 확인하세요!<br/>
+                                    1. 다음으로 실행(Execute as): <strong>'나(Me)'</strong><br/>
+                                    2. 액세스하는 사용자(Who has access): <strong>'모든 사용자(Anyone)'</strong>
+                                </li>
                             </ol>
                         </div>
                     </div>
@@ -682,7 +686,7 @@ function doPost(e) {
                 reader.readAsDataURL(file);
             };
 
-            // ✨ 성장 앨범 사진 업로드 기능 (에러 알림 추가)
+            // ✨ 성장 앨범 사진 업로드 기능 (진짜 원인 알림창 탑재)
             const handleAlbumUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
@@ -714,10 +718,11 @@ function doPost(e) {
 
                         // 서버가 보내준 URL 배열로 로컬 데이터 교체
                         if (syncResult && syncResult.photos) {
-                            // ✨ 사진 저장 실패(권한/ID 문제) 시 알림 띄우기
-                            const hasError = syncResult.photos.some(p => p.url && p.url.includes('업로드실패'));
-                            if (hasError) {
-                                showAlert('사진 저장 실패! 가이드 5번(구글 스크립트 ▷실행 권한 허용)을 꼭 확인해주세요.', 'error');
+                            // ✨ 사진 저장 실패 시 "진짜 원인"을 화면에 띄웁니다!
+                            const errorItem = syncResult.photos.find(p => p.url && p.url.includes('업로드실패'));
+                            if (errorItem) {
+                                const exactErrorMsg = errorItem.url.split('_')[1] || "권한 또는 배포 설정 문제";
+                                showAlert(`사진 저장 실패!\n원인: ${exactErrorMsg}\n\nDB 가이드를 꼭 확인해주세요.`, 'error');
                             } else {
                                 showAlert('앨범 사진이 안전하게 클라우드에 저장되었습니다!', 'success');
                             }
@@ -987,7 +992,8 @@ function doPost(e) {
                     let needsUpdate = false;
                     if (syncResult.imageUrl) { 
                         if (syncResult.imageUrl.includes('업로드실패')) {
-                            showAlert('프로필 사진 저장 실패! 가이드 5번(권한 허용)을 꼭 확인해주세요.', 'error');
+                            const exactErrorMsg = syncResult.imageUrl.split('_')[1] || "권한/ID 설정 오류";
+                            showAlert(`프로필 사진 저장 실패!\n원인: ${exactErrorMsg}\n\nDB 가이드를 꼭 확인해주세요.`, 'error');
                         }
                         newPlant.imageBase64 = syncResult.imageUrl; 
                         needsUpdate = true; 
@@ -1016,7 +1022,8 @@ function doPost(e) {
                     let needsUpdate = false;
                     if (syncResult.imageUrl && syncResult.imageUrl !== updatedPlant.imageBase64) {
                         if (syncResult.imageUrl.includes('업로드실패')) {
-                            showAlert('프로필 사진 저장 실패! 가이드 5번(권한 허용)을 꼭 확인해주세요.', 'error');
+                            const exactErrorMsg = syncResult.imageUrl.split('_')[1] || "권한/ID 설정 오류";
+                            showAlert(`프로필 사진 저장 실패!\n원인: ${exactErrorMsg}\n\nDB 가이드를 꼭 확인해주세요.`, 'error');
                         }
                         updatedPlant.imageBase64 = syncResult.imageUrl; 
                         needsUpdate = true;
@@ -1422,8 +1429,8 @@ function doPost(e) {
                                                                 <div key={plant.id} className={`flex items-center justify-between py-2 transition-opacity ${isDoing ? 'opacity-50' : ''}`}>
                                                                     <div className="flex items-center space-x-4 flex-1 cursor-pointer" onClick={() => { setEditingPlant({...plant}); setDetailTab('info'); }}>
                                                                         <div className="relative">
-                                                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl overflow-hidden bg-cover bg-center ${plant.color}`} style={plant.imageBase64 ? { backgroundImage: `url(${plant.imageBase64})` } : {}}>
-                                                                                {!plant.imageBase64 && (plant.photo ? plant.photo : <svg className="w-6 h-6 opacity-30" fill="currentColor" viewBox="0 0 20 20"><circle cx="10" cy="10" r="3"/><path d="M10 2a8 8 0 100 16 8 8 0 000-16zm0 14a6 6 0 110-12 6 6 0 010 12z"/></svg>)}
+                                                                            <div className={`w-14 h-14 rounded-2xl flex items-center justify-center text-2xl overflow-hidden bg-cover bg-center ${plant.color}`} style={plant.imageBase64 && !plant.imageBase64.includes('업로드실패') ? { backgroundImage: `url(${plant.imageBase64})` } : {}}>
+                                                                                {(!plant.imageBase64 || plant.imageBase64.includes('업로드실패')) && (plant.photo || '🌿')}
                                                                             </div>
                                                                             {plant.createdAt && <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">{calculateDday(plant.createdAt)}</div>}
                                                                         </div>
@@ -1467,8 +1474,8 @@ function doPost(e) {
                                                         <div key={`${plant.id}-${idx}`} onClick={() => { setEditingPlant({...plant}); setDetailTab('info'); }} className={`bg-white rounded-2xl p-4 flex items-center justify-between shadow-sm border border-gray-50 cursor-pointer hover:shadow-md transition-all ${isDoing ? 'opacity-50' : ''}`}>
                                                             <div className="flex items-center space-x-4">
                                                                 <div className="relative">
-                                                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl overflow-hidden bg-cover bg-center ${plant.color}`} style={plant.imageBase64 ? { backgroundImage: `url(${plant.imageBase64})` } : {}}>
-                                                                        {!plant.imageBase64 && (plant.photo || <svg className="w-5 h-5 opacity-50" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 3v4M3 5h4M6 17v4m-2-2h4m5-16l2.286 6.857L21 12l-5.714 2.143L13 21l-2.286-6.857L5 12l5.714-2.143L13 3z"/></svg>)}
+                                                                    <div className={`w-12 h-12 rounded-xl flex items-center justify-center text-xl overflow-hidden bg-cover bg-center ${plant.color}`} style={plant.imageBase64 && !plant.imageBase64.includes('업로드실패') ? { backgroundImage: `url(${plant.imageBase64})` } : {}}>
+                                                                        {(!plant.imageBase64 || plant.imageBase64.includes('업로드실패')) && (plant.photo || '🌿')}
                                                                     </div>
                                                                     {plant.createdAt && <div className="absolute -top-2 -right-2 bg-emerald-500 text-white text-[9px] font-bold px-1.5 py-0.5 rounded-full shadow-sm">{calculateDday(plant.createdAt)}</div>}
                                                                 </div>
