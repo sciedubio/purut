@@ -107,6 +107,11 @@
         };
 
         // --- 유틸 함수 ---
+        const safeJSONParse = (str, fallback) => {
+            if (!str) return fallback;
+            try { return JSON.parse(str); } catch (e) { return fallback; }
+        };
+
         const calculateDiffDays = (dateStr) => {
             if (!dateStr) return 0;
             const targetDate = new Date(dateStr);
@@ -192,28 +197,32 @@
             if (!isOpen) return null;
             const scriptCode = `function doGet(e) {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
-  var sheet = ss.getSheetByName('Plants');
-  if (!sheet) return ContentService.createTextOutput(JSON.stringify([])).setMimeType(ContentService.MimeType.JSON);
-  
-  var dataRange = sheet.getDataRange();
-  var values = dataRange.getValues();
+  var pSheet = ss.getSheetByName('Plants');
   var plants = [];
   
-  for (var i = 1; i < values.length; i++) {
-    plants.push({
-      id: values[i][1],
-      name: values[i][2],
-      location: values[i][3],
-      potType: values[i][4],
-      cycles: values[i][5], 
-      tasks: values[i][6],  
-      imageUrl: values[i][7], 
-      createdAt: values[i][8],
-      photos: values[i][9], // 앨범 사진 배열 추가
-      aiGuide: values[i][10] // ✨ AI 관리 가이드 추가
-    });
+  if (pSheet) {
+    var pValues = pSheet.getDataRange().getValues();
+    for (var i = 1; i < pValues.length; i++) {
+      plants.push({
+        id: pValues[i][1], name: pValues[i][2], location: pValues[i][3], potType: pValues[i][4],
+        cycles: pValues[i][5], tasks: pValues[i][6], imageUrl: pValues[i][7], createdAt: pValues[i][8],
+        photos: pValues[i][9], aiGuide: pValues[i][10]
+      });
+    }
   }
-  return ContentService.createTextOutput(JSON.stringify(plants)).setMimeType(ContentService.MimeType.JSON);
+
+  var nSheet = ss.getSheetByName('Notes');
+  var notes = [];
+  if (nSheet) {
+    var nValues = nSheet.getDataRange().getValues();
+    for (var j = 1; j < nValues.length; j++) {
+      notes.push({
+        id: nValues[j][0], plantId: nValues[j][1], date: nValues[j][2], content: nValues[j][3]
+      });
+    }
+  }
+
+  return ContentService.createTextOutput(JSON.stringify({plants: plants, notes: notes})).setMimeType(ContentService.MimeType.JSON);
 }
 
 function doPost(e) {
@@ -242,7 +251,6 @@ function doPost(e) {
       var response = UrlFetchApp.fetch(url, options);
       var json = JSON.parse(response.getContentText());
       
-      // ✨ 에러의 진짜 원인을 반환하도록 로직 개선
       var replyText = "응답을 받을 수 없습니다.";
       if (json.candidates && json.candidates.length > 0) {
         replyText = json.candidates[0].content.parts[0].text;
@@ -270,6 +278,32 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({"result": "deleted"})).setMimeType(ContentService.MimeType.JSON);
     }
 
+    // ✨ 2. 노트 추가 요청 처리
+    if (data.recordType === 'add_note') {
+      var sheet = ss.getSheetByName('Notes');
+      if (!sheet) {
+        sheet = ss.insertSheet('Notes');
+        sheet.appendRow(['NoteID', 'PlantID', 'Date', 'Content']);
+      }
+      sheet.appendRow([data.note.id, data.note.plantId, data.note.date, data.note.content]);
+      return ContentService.createTextOutput(JSON.stringify({"result": "success"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
+    // ✨ 3. 노트 삭제 요청 처리
+    if (data.recordType === 'delete_note') {
+      var sheet = ss.getSheetByName('Notes');
+      if (sheet) {
+        var values = sheet.getDataRange().getValues();
+        for (var i = 1; i < values.length; i++) {
+          if (values[i][0] == data.noteId) {
+            sheet.deleteRow(i + 1);
+            break;
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({"result": "deleted"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     var imageUrl = data.imageBase64 || "";
 
     // 📸 구글 드라이브 이미지 업로드
@@ -288,7 +322,7 @@ function doPost(e) {
       } catch(driveError) { }
     }
 
-    // 2. 식물 정보 DB 업데이트 (시트2: Plants)
+    // 4. 식물 정보 DB 업데이트 (시트2: Plants)
     if (data.recordType === 'plant') {
       var sheet = ss.getSheetByName('Plants');
       if (!sheet) sheet = ss.insertSheet('Plants');
@@ -318,7 +352,7 @@ function doPost(e) {
         ]);
       }
     } 
-    // 3. 일반 행동 로그 전송 (시트1: History)
+    // 5. 일반 행동 로그 전송 (시트1: History)
     else if (data.recordType === 'log') {
       var sheet = ss.getSheetByName('History');
       if (!sheet) sheet = ss.insertSheet('History');
@@ -345,12 +379,12 @@ function doPost(e) {
                                 <li>내 구글 드라이브에 <strong className="text-emerald-600">새 폴더</strong>를 만들고 공유 권한을 <strong className="text-emerald-600">'링크가 있는 모든 사용자'</strong>로 변경합니다.</li>
                                 <li>해당 폴더 주소의 끝부분(<strong className="text-red-500">폴더 ID</strong>)을 복사하여 아래 코드의 <code className="bg-gray-100 px-1 rounded text-red-500">FOLDER_ID</code> 에 붙여넣습니다.</li>
                                 <li>발급받으신 <strong className="text-purple-600">Gemini API 키</strong>를 아래 코드의 <code className="bg-gray-100 px-1 rounded text-purple-600">API_KEY</code> 에 붙여넣습니다.</li>
-                                <li>변경된 아래 <strong>전체 코드를 복사</strong>하여 기존 구글 스프레드시트 Apps Script 편집기에 <strong className="text-red-500">덮어쓰기</strong> 합니다.</li>
-                                <li><strong className="text-red-500">중요:</strong> 스크립트 편집기 상단 <strong>[▷ 실행]</strong> 버튼을 눌러 나오는 팝업에서 <strong>권한 검토 {'>'} 고급 {'>'} (안전하지 않음)으로 이동</strong>을 눌러 Drive 및 외부 요청 권한을 허용해 주세요.</li>
+                                <li>변경된 아래 <strong>전체 코드를 복사</strong>하여 기존 구글 스프레드시트 Apps Script 편집기에 <strong className="text-red-500">완전히 덮어쓰기</strong> 합니다.</li>
+                                <li><strong className="text-red-500">중요:</strong> 스크립트 편집기 상단 <strong>[▷ 실행]</strong> 버튼을 눌러 나오는 팝업에서 <strong>권한 검토 {'>'} 고급 {'>'} (안전하지 않음)으로 이동</strong>을 눌러 권한을 허용해 주세요.</li>
                                 <div className="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono my-2 relative">
                                     <pre>{scriptCode}</pre>
                                 </div>
-                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(AI 연동 및 삭제 기능)이 완벽히 적용됩니다!</li>
+                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(AI 연동 및 새로운 노트/가이드 저장소)이 완벽히 적용됩니다!</li>
                             </ol>
                         </div>
                     </div>
@@ -405,7 +439,7 @@ function doPost(e) {
             const [isAILoadingCycle, setIsAILoadingCycle] = useState(false);
             const [isSavingPlant, setIsSavingPlant] = useState(false);
 
-            // 🔔 알림(Notification) 상태 (빈 배열로 초기화)
+            // 🔔 알림(Notification) 상태
             const [isNotiOpen, setIsNotiOpen] = useState(false);
             const [notifications, setNotifications] = useState([]);
 
@@ -474,7 +508,6 @@ function doPost(e) {
                     });
                 }
 
-                // 기존에 사용자가 읽은 알림(isRead: true) 상태는 그대로 유지하면서 목록만 최신화
                 setNotifications(prev => {
                     return generatedNotis.map(newNoti => {
                         const existing = prev.find(p => p.id === newNoti.id);
@@ -484,24 +517,25 @@ function doPost(e) {
             }, [plants]);
 
 
-            // ✨ 구글 시트에서 최신 식물 데이터를 '불러오는' 함수
-            const loadPlantsFromSheet = async () => {
+            // ✨ 구글 시트에서 최신 '식물'과 '노트' 데이터를 완벽하게 불러오는 함수
+            const loadDataFromSheet = async () => {
                 if (!GOOGLE_SCRIPT_URL) return;
                 setIsSyncing(true);
                 try {
                     const res = await fetch(GOOGLE_SCRIPT_URL);
                     const data = await res.json();
                     
-                    if (data && data.length > 0) {
-                        const loadedPlants = data.map(item => ({
+                    // 식물 데이터 로드 및 적용
+                    if (data.plants && data.plants.length > 0) {
+                        const loadedPlants = data.plants.map(item => ({
                             id: Number(item.id),
                             name: item.name,
                             location: item.location,
                             potType: item.potType,
-                            cycles: item.cycles ? JSON.parse(item.cycles) : { ...defC },
-                            tasks: item.tasks ? JSON.parse(item.tasks) : {},
-                            photos: item.photos ? JSON.parse(item.photos) : [],
-                            aiGuide: item.aiGuide || '', // ✨ AI 가이드 로드
+                            cycles: safeJSONParse(item.cycles, { ...defC }),
+                            tasks: safeJSONParse(item.tasks, {}),
+                            photos: safeJSONParse(item.photos, []),
+                            aiGuide: item.aiGuide || '', 
                             imageBase64: item.imageUrl,
                             createdAt: item.createdAt,
                             photo: item.imageUrl ? '' : '🌱',
@@ -509,6 +543,18 @@ function doPost(e) {
                         }));
                         setPlants(loadedPlants); 
                         localStorage.setItem('groo_plants', JSON.stringify(loadedPlants)); 
+                    }
+
+                    // ✨ 노트 데이터 로드 및 적용
+                    if (data.notes && data.notes.length > 0) {
+                        const loadedNotes = data.notes.map(item => ({
+                            id: Number(item.id),
+                            plantId: Number(item.plantId),
+                            date: item.date,
+                            content: item.content
+                        })).sort((a, b) => b.id - a.id); // 최신순 정렬
+                        setNotes(loadedNotes);
+                        localStorage.setItem('groo_notes', JSON.stringify(loadedNotes));
                     }
                 } catch (error) {
                     console.error("데이터 동기화 실패:", error);
@@ -528,7 +574,7 @@ function doPost(e) {
                 const savedHistory = localStorage.getItem('groo_history');
                 if (savedHistory) setActionHistory(JSON.parse(savedHistory));
                 
-                loadPlantsFromSheet();
+                loadDataFromSheet();
 
                 const fetchWeather = async (lat, lon) => {
                     try {
@@ -548,11 +594,6 @@ function doPost(e) {
                     fetchWeather(37.5665, 126.9780);
                 }
             }, []);
-
-            // 로컬 스토리지 동기화 (기록용)
-            useEffect(() => {
-                localStorage.setItem('groo_notes', JSON.stringify(notes));
-            }, [notes]);
 
             useEffect(() => {
                 localStorage.setItem('groo_history', JSON.stringify(actionHistory));
@@ -650,7 +691,7 @@ function doPost(e) {
                             cycles: plant.cycles || {},
                             tasks: plant.tasks || {},
                             photos: plant.photos || [],
-                            aiGuide: plant.aiGuide || '', // ✨ AI 가이드 전송
+                            aiGuide: plant.aiGuide || '', 
                             createdAt: plant.createdAt,
                             imageBase64: plant.imageBase64 
                         })
@@ -739,7 +780,6 @@ function doPost(e) {
                     const syncedPlant = updatedPlants.find(p => p.id === plant.id);
                     if (syncedPlant) syncPlantToSheet(syncedPlant);
                     
-                    // 완료 히스토리 기록
                     const newAction = { id: Date.now() + Math.random(), plantId: plant.id, date: new Date().toISOString(), content: `${TASK_META[taskType].title} 완료`, type: 'action' };
                     setActionHistory(prev => [newAction, ...prev]);
                 });
@@ -797,7 +837,6 @@ function doPost(e) {
                 }
             };
 
-            // ✨ 내 식물 전용 맞춤 AI 가이드 생성 핸들러
             const handleGeneratePlantGuide = async () => {
                 if (!editingPlant) return;
                 setIsSavingPlant(true);
@@ -857,7 +896,7 @@ function doPost(e) {
                         repot: nextRepotDate.toISOString().split('T')[0],
                     },
                     photos: [],
-                    aiGuide: '' // ✨ 초기 AI 가이드 빈칸
+                    aiGuide: '' 
                 };
 
                 setPlants([...plants, newPlant]);
@@ -907,6 +946,7 @@ function doPost(e) {
                 });
             };
 
+            // ✨ 노트 작성 및 서버 전송 (동기화)
             const handleAddNote = () => {
                 if (!selectedPlantForNote) return showAlert('노트를 작성할 식물을 선택해주세요.', 'error');
                 if (!newNoteContent.trim()) return showAlert('내용을 입력해주세요.', 'error');
@@ -921,9 +961,28 @@ function doPost(e) {
                 setNotes([newNote, ...notes]);
                 setNewNoteContent('');
                 showAlert('노트가 기록되었습니다.', 'success');
+
+                // 백그라운드 구글 시트 저장
+                if (GOOGLE_SCRIPT_URL) {
+                    fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ recordType: 'add_note', note: newNote })
+                    }).catch(console.error);
+                }
             };
 
-            // ✨ 데이터 초기화 핸들러
+            // ✨ 개별 노트 삭제 핸들러
+            const handleDeleteNote = (noteId) => {
+                setNotes(notes.filter(n => n.id !== noteId));
+                // 백그라운드 구글 시트 삭제 명령
+                if (GOOGLE_SCRIPT_URL) {
+                    fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ recordType: 'delete_note', noteId: noteId })
+                    }).catch(console.error);
+                }
+            };
+
             const handleResetData = () => {
                 setConfirmData({
                     isOpen: true,
@@ -1395,7 +1454,7 @@ function doPost(e) {
                                             const plant = plants.find(p => p.id === note.plantId);
                                             return (
                                                 <div key={note.id} className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 relative">
-                                                    <button onClick={() => setNotes(notes.filter(n => n.id !== note.id))} className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors">
+                                                    <button onClick={() => handleDeleteNote(note.id)} className="absolute top-4 right-4 text-gray-300 hover:text-red-500 transition-colors">
                                                         <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
                                                     </button>
                                                     <div className="flex items-center space-x-2 mb-2">
