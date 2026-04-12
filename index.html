@@ -30,7 +30,7 @@
         // ==========================================
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbydS7LXIq9QgJa1xd0JFzqyIeScGWkrpt8MtRAuOVRJZ9AExT-rUWD0Nsd7sZXT4SIb/exec"; 
 
-        // ✨ Gemini AI 호출 (구글 앱스 스크립트 서버 우회 방식으로 전면 개편)
+        // ✨ Gemini AI 호출
         const callGeminiAPI = async (prompt, systemInstruction = "You are a helpful assistant.", imageBase64 = null) => {
             if (!GOOGLE_SCRIPT_URL) {
                 throw new Error("구글 스크립트 URL이 연결되지 않았습니다.");
@@ -61,9 +61,9 @@
 
         // --- 아이콘 컴포넌트 (SVG) ---
         const Icons = {
-            Crown: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
             Bell: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 17h5l-1.405-1.405A2.032 2.032 0 0118 14.158V11a6.002 6.002 0 00-4-5.659V5a2 2 0 10-4 0v.341C7.67 6.165 6 8.388 6 11v3.159c0 .538-.214 1.055-.595 1.436L4 17h5m6 0v1a3 3 0 11-6 0v-1m6 0H9" /></svg>,
             User: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z" /></svg>,
+            Crown: () => <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 12l2 2 4-4m5.618-4.016A11.955 11.955 0 0112 2.944a11.955 11.955 0 01-8.618 3.04A12.02 12.02 0 003 9c0 5.591 3.824 10.29 9 11.622 5.176-1.332 9-6.03 9-11.622 0-1.042-.133-2.052-.382-3.016z" /></svg>,
             Water: ({cls}) => <svg className={`w-5 h-5 ${cls}`} fill="currentColor" viewBox="0 0 24 24"><path d="M12 21.5c-3.3 0-6-2.7-6-6 0-3 3.6-8.5 5.5-11.2.3-.4.8-.4 1.1 0 1.8 2.7 5.4 8.2 5.4 11.2 0 3.3-2.7 6-6 6z"/></svg>,
             Wind: ({cls}) => <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M14.752 11.168l-3.197-2.132A4 4 0 002 9v2m15.248 2.832l-3.197 2.132A4 4 0 012 15v-2m18-6a4 4 0 00-5.656-5.656l-3.197 2.132a4 4 0 00-1.5 3.344"/></svg>,
             Spray: ({cls}) => <svg className={`w-5 h-5 ${cls}`} fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M19.428 15.428a2 2 0 00-1.022-.547l-2.387-.477a6 6 0 00-3.86.517l-.318.158a6 6 0 01-3.86.517L6.05 15.21a2 2 0 00-1.806.547M8 4h8l-1 1v5.172a2 2 0 00.586 1.414l5 5c1.26 1.26.367 3.414-1.415 3.414H4.828c-1.782 0-2.674-2.154-1.414-3.414l5-5A2 2 0 009 10.172V5L8 4z" /></svg>,
@@ -92,10 +92,6 @@
         };
 
         // --- 유틸 함수 ---
-        const generateDummyData = () => {
-            return []; // 초기 빈 데이터 설정 (구글 시트 연동을 위해)
-        };
-
         const calculateDiffDays = (dateStr) => {
             if (!dateStr) return 0;
             const targetDate = new Date(dateStr);
@@ -131,7 +127,7 @@
             const firstDay = new Date(year, month, 1).getDay();
             const daysInMonth = new Date(year, month + 1, 0).getDate();
             const days = [];
-            for (let i = 0; i < firstDay; i++) days.push(null); // empty slots
+            for (let i = 0; i < firstDay; i++) days.push(null); 
             for (let i = 1; i <= daysInMonth; i++) days.push(i);
             return days;
         };
@@ -164,13 +160,13 @@
             return (
                 <div className="fixed inset-0 z-[110] flex items-center justify-center bg-black bg-opacity-40 fade-in p-4">
                     <div className="bg-white rounded-2xl p-6 w-full max-w-sm shadow-2xl slide-up text-center">
-                        <div className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-red-100 text-red-500">
-                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"/></svg>
+                        <div className="mx-auto w-12 h-12 rounded-full flex items-center justify-center mb-4 bg-emerald-100 text-emerald-500">
+                            <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 13l4 4L19 7"></path></svg>
                         </div>
                         <p className="text-gray-800 font-medium mb-6 whitespace-pre-line">{message}</p>
                         <div className="flex space-x-3">
                             <button onClick={onCancel} className="flex-1 py-3 rounded-xl font-bold text-gray-700 bg-gray-100 hover:bg-gray-200 transition-colors">취소</button>
-                            <button onClick={onConfirm} className="flex-1 py-3 rounded-xl font-bold text-white bg-red-500 hover:bg-red-600 transition-colors">삭제하기</button>
+                            <button onClick={onConfirm} className="flex-1 py-3 rounded-xl font-bold text-white bg-emerald-500 hover:bg-emerald-600 transition-colors">실행하기</button>
                         </div>
                     </div>
                 </div>
@@ -207,10 +203,10 @@
 function doPost(e) {
   try {
     var data = JSON.parse(e.postData.contents);
+    var ss = SpreadsheetApp.getActiveSpreadsheet();
     
     // ✨ 0. AI 진단 요청인 경우 (Gemini API 안전 호출)
     if (data.recordType === 'ai_query') {
-      // ↓↓↓ 여기에 발급받은 Gemini API 키를 넣으세요 ↓↓↓
       var API_KEY = "여기에_GEMINI_API_키를_넣으세요";
       var url = "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash:generateContent?key=" + API_KEY;
 
@@ -218,9 +214,7 @@ function doPost(e) {
       if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
         var base64Data = data.imageBase64.split(',')[1];
         var mimeType = data.imageBase64.substring(5, data.imageBase64.indexOf(';'));
-        parts.push({
-          inlineData: { mimeType: mimeType, data: base64Data }
-        });
+        parts.push({ inlineData: { mimeType: mimeType, data: base64Data } });
       }
 
       var payload = {
@@ -228,13 +222,7 @@ function doPost(e) {
         systemInstruction: { parts: [{ text: data.systemInstruction || "You are a helpful assistant." }] }
       };
 
-      var options = {
-        method: "post",
-        contentType: "application/json",
-        payload: JSON.stringify(payload),
-        muteHttpExceptions: true
-      };
-
+      var options = { method: "post", contentType: "application/json", payload: JSON.stringify(payload), muteHttpExceptions: true };
       var response = UrlFetchApp.fetch(url, options);
       var json = JSON.parse(response.getContentText());
       var replyText = json.candidates && json.candidates.length > 0 ? json.candidates[0].content.parts[0].text : "응답을 받을 수 없습니다.";
@@ -242,10 +230,24 @@ function doPost(e) {
       return ContentService.createTextOutput(JSON.stringify({"result": "success", "text": replyText})).setMimeType(ContentService.MimeType.JSON);
     }
 
-    var ss = SpreadsheetApp.getActiveSpreadsheet();
+    // ✨ 1. 식물 삭제 요청 처리
+    if (data.recordType === 'delete_plant') {
+      var sheet = ss.getSheetByName('Plants');
+      if (sheet) {
+        var values = sheet.getDataRange().getValues();
+        for (var i = 1; i < values.length; i++) {
+          if (values[i][1] == data.plantId) {
+            sheet.deleteRow(i + 1);
+            break;
+          }
+        }
+      }
+      return ContentService.createTextOutput(JSON.stringify({"result": "deleted"})).setMimeType(ContentService.MimeType.JSON);
+    }
+
     var imageUrl = data.imageBase64 || "";
 
-    // 📸 구글 드라이브 이미지 업로드 (에러 방지 처리 추가)
+    // 📸 구글 드라이브 이미지 업로드
     if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
       var FOLDER_ID = "여기에_구글드라이브_폴더_ID를_넣으세요"; 
       try {
@@ -258,12 +260,10 @@ function doPost(e) {
             file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
             imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
         }
-      } catch(driveError) {
-        // 드라이브 권한이 없거나 ID가 틀려도 시트 저장은 되도록 패스
-      }
+      } catch(driveError) { }
     }
 
-    // 1. 식물 정보 DB 업데이트 (시트2: Plants)
+    // 2. 식물 정보 DB 업데이트 (시트2: Plants)
     if (data.recordType === 'plant') {
       var sheet = ss.getSheetByName('Plants');
       if (!sheet) sheet = ss.insertSheet('Plants');
@@ -285,7 +285,6 @@ function doPost(e) {
           isUpdated = true; break;
         }
       }
-      
       if (!isUpdated) {
         sheet.appendRow([
           data.timestamp, data.plantId, data.plantName, data.location, data.potType,
@@ -293,7 +292,7 @@ function doPost(e) {
         ]);
       }
     } 
-    // 2. 일반 행동 로그 전송 (시트1: History)
+    // 3. 일반 행동 로그 전송 (시트1: History)
     else if (data.recordType === 'log') {
       var sheet = ss.getSheetByName('History');
       if (!sheet) sheet = ss.insertSheet('History');
@@ -325,7 +324,7 @@ function doPost(e) {
                                 <div className="bg-gray-800 text-green-400 p-3 rounded-lg text-xs overflow-x-auto font-mono my-2 relative">
                                     <pre>{scriptCode}</pre>
                                 </div>
-                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(AI 연동)이 완벽히 적용됩니다!</li>
+                                <li>반드시 <strong>배포 {'>'} 새 배포 (웹앱)</strong>를 다시 실행해 주셔야 새로운 기능(AI 연동 및 삭제 기능)이 완벽히 적용됩니다!</li>
                             </ol>
                         </div>
                     </div>
@@ -352,12 +351,12 @@ function doPost(e) {
 
         const App = () => {
             const [showIntro, setShowIntro] = useState(true);
-            const [view, setView] = useState('today'); // today, plants, note, guide
-            const [todayTab, setTodayTab] = useState('today'); // today, planned, calendar (달력 탭 추가)
+            const [view, setView] = useState('today'); // today, plants, note, guide, mypage
+            const [todayTab, setTodayTab] = useState('today'); 
             const [plants, setPlants] = useState([]);
-            const [notes, setNotes] = useState([]); // 노트 상태 추가
-            const [actionHistory, setActionHistory] = useState([]); // 타임라인 기록 상태
-            const [weather, setWeather] = useState(null); // 날씨 상태
+            const [notes, setNotes] = useState([]); 
+            const [actionHistory, setActionHistory] = useState([]); 
+            const [weather, setWeather] = useState(null); 
             const [alertData, setAlertData] = useState({ isOpen: false, message: '', type: 'success' });
             const [confirmData, setConfirmData] = useState({ isOpen: false, message: '', onConfirm: null });
             const [isGuideOpen, setIsGuideOpen] = useState(false);
@@ -371,35 +370,30 @@ function doPost(e) {
             const [guideResponse, setGuideResponse] = useState('');
             const [isAILoadingGuide, setIsAILoadingGuide] = useState(false);
             
-            // 식물 백과사전 검색 상태
-            const [guideMode, setGuideMode] = useState('diagnose'); // 'diagnose', 'search'
+            const [guideMode, setGuideMode] = useState('diagnose');
             const [searchPlantName, setSearchPlantName] = useState('');
             const [searchResponse, setSearchResponse] = useState('');
             const [isAILoadingSearch, setIsAILoadingSearch] = useState(false);
-            const [isAILoadingTip, setIsAILoadingTip] = useState(false); // 오늘의 꿀팁 로딩 상태
+            const [isAILoadingTip, setIsAILoadingTip] = useState(false);
             
-            // ✨ 식물 관리 주기 AI 추천 및 사진 저장 로딩 상태
             const [isAILoadingCycle, setIsAILoadingCycle] = useState(false);
-            const [isSavingPlant, setIsSavingPlant] = useState(false); // 사진 업로드 로딩
+            const [isSavingPlant, setIsSavingPlant] = useState(false);
 
-            // 🔔 알림(Notification) 상태
+            // 🔔 알림(Notification) 상태 (빈 배열로 초기화)
             const [isNotiOpen, setIsNotiOpen] = useState(false);
-            const [notifications, setNotifications] = useState([
-                { id: 1, text: "🌱 Purut에 오신 것을 환영합니다! 새 식물을 등록해보세요.", time: "방금 전", isRead: false },
-                { id: 2, text: "💧 물주기를 애타게 기다리는 식물이 있는지 확인해보세요!", time: "2시간 전", isRead: false }
-            ]);
+            const [notifications, setNotifications] = useState([]);
 
-            // 식물 추가/수정 상태
             const defC = { water: 14, ventilate: 7, spray: 3, nutrient: 90, repot: 365 };
             const todayStr = new Date().toISOString().split('T')[0];
             const [isAddModalOpen, setIsAddModalOpen] = useState(false);
             const [newPlantForm, setNewPlantForm] = useState({ nickname: '', species: '', photo: '🌱', imageBase64: null, location: '거실', potType: '토분', lastWatered: todayStr, cycles: { ...defC } });
             
-            const [editingPlant, setEditingPlant] = useState(null); // 수정 모달 띄울 대상
-            const [detailTab, setDetailTab] = useState('info'); // 'info', 'album' (상세 정보 / 성장 앨범 탭)
+            const [editingPlant, setEditingPlant] = useState(null); 
+            const [detailTab, setDetailTab] = useState('info'); 
 
             // 달력용 상태
             const [calDate, setCalDate] = useState(new Date());
+            const [selectedCalDate, setSelectedCalDate] = useState(todayStr);
 
             // 노트 입력 상태
             const [newNoteContent, setNewNoteContent] = useState('');
@@ -407,6 +401,62 @@ function doPost(e) {
 
             // 실행 취소(Undo) 상태 관리
             const [undoData, setUndoData] = useState({ show: false, plantId: null, taskType: null, oldDate: null, timerId: null, plantName: '', actionName: '' });
+
+            // ✨ 알림(Notification) 자동 생성 로직
+            useEffect(() => {
+                if (plants.length === 0) {
+                    setNotifications(prev => prev.some(n => n.id === 'welcome') ? prev : [{ id: 'welcome', text: "🌱 Purut에 오신 것을 환영합니다! 새 식물을 등록해보세요.", time: "방금 전", isRead: false }]);
+                    return;
+                }
+
+                const generatedNotis = [];
+                let hasTask = false;
+
+                const getTaskEmoji = (taskType) => {
+                    switch(taskType) {
+                        case 'water': return '💧';
+                        case 'ventilate': return '💨';
+                        case 'spray': return '💦';
+                        case 'nutrient': return '💊';
+                        case 'repot': return '🪴';
+                        default: return '✨';
+                    }
+                };
+
+                plants.forEach(plant => {
+                    Object.entries(plant.tasks).forEach(([taskType, dateStr]) => {
+                        const diff = calculateDiffDays(dateStr);
+                        if (diff <= 0) {
+                            hasTask = true;
+                            const meta = TASK_META[taskType];
+                            generatedNotis.push({
+                                id: `${plant.id}-${taskType}`,
+                                text: `${getTaskEmoji(taskType)} [${plant.name}] ${meta.title} 관리가 필요해요!`,
+                                time: diff === 0 ? '오늘' : `${Math.abs(diff)}일 지남`,
+                                isRead: false
+                            });
+                        }
+                    });
+                });
+
+                if (!hasTask) {
+                    generatedNotis.push({
+                        id: 'all-clear',
+                        text: "🌿 오늘은 식물들이 모두 건강하게 잘 쉬고 있어요!",
+                        time: "방금 전",
+                        isRead: false
+                    });
+                }
+
+                // 기존에 사용자가 읽은 알림(isRead: true) 상태는 그대로 유지하면서 목록만 최신화
+                setNotifications(prev => {
+                    return generatedNotis.map(newNoti => {
+                        const existing = prev.find(p => p.id === newNoti.id);
+                        return existing ? { ...newNoti, isRead: existing.isRead } : newNoti;
+                    });
+                });
+            }, [plants]);
+
 
             // ✨ 구글 시트에서 최신 식물 데이터를 '불러오는' 함수
             const loadPlantsFromSheet = async () => {
@@ -424,14 +474,14 @@ function doPost(e) {
                             potType: item.potType,
                             cycles: item.cycles ? JSON.parse(item.cycles) : { ...defC },
                             tasks: item.tasks ? JSON.parse(item.tasks) : {},
-                            photos: item.photos ? JSON.parse(item.photos) : [], // 앨범 사진 배열
-                            imageBase64: item.imageUrl, // 드라이브 URL
+                            photos: item.photos ? JSON.parse(item.photos) : [],
+                            imageBase64: item.imageUrl,
                             createdAt: item.createdAt,
-                            photo: item.imageUrl ? '' : '🌱', // 사진이 있으면 이모지 생략
+                            photo: item.imageUrl ? '' : '🌱',
                             color: 'bg-green-100' 
                         }));
-                        setPlants(loadedPlants); // 로컬 화면 업데이트!
-                        localStorage.setItem('groo_plants', JSON.stringify(loadedPlants)); // 캐시 저장
+                        setPlants(loadedPlants); 
+                        localStorage.setItem('groo_plants', JSON.stringify(loadedPlants)); 
                     }
                 } catch (error) {
                     console.error("데이터 동기화 실패:", error);
@@ -444,6 +494,12 @@ function doPost(e) {
             useEffect(() => {
                 const savedPlants = localStorage.getItem('groo_plants');
                 if (savedPlants) setPlants(JSON.parse(savedPlants));
+                
+                const savedNotes = localStorage.getItem('groo_notes');
+                if (savedNotes) setNotes(JSON.parse(savedNotes));
+                
+                const savedHistory = localStorage.getItem('groo_history');
+                if (savedHistory) setActionHistory(JSON.parse(savedHistory));
                 
                 loadPlantsFromSheet();
 
@@ -466,13 +522,20 @@ function doPost(e) {
                 }
             }, []);
 
+            // 로컬 스토리지 동기화 (기록용)
+            useEffect(() => {
+                localStorage.setItem('groo_notes', JSON.stringify(notes));
+            }, [notes]);
+
+            useEffect(() => {
+                localStorage.setItem('groo_history', JSON.stringify(actionHistory));
+            }, [actionHistory]);
+
             const showAlert = (message, type = 'success') => setAlertData({ isOpen: true, message, type });
 
-            // 이미지 업로드 및 리사이징 (Canvas API를 통한 최적화)
             const handleImageUpload = (e, setFormCallback) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const img = new Image();
@@ -482,10 +545,8 @@ function doPost(e) {
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
-                        
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
-                        
                         const base64 = canvas.toDataURL('image/jpeg', 0.8);
                         setFormCallback(prev => ({ ...prev, imageBase64: base64 }));
                     };
@@ -494,11 +555,9 @@ function doPost(e) {
                 reader.readAsDataURL(file);
             };
 
-            // 성장 앨범 (타임랩스) 사진 업로드 핸들러
             const handleAlbumUpload = (e) => {
                 const file = e.target.files[0];
                 if (!file) return;
-                
                 const reader = new FileReader();
                 reader.onload = (event) => {
                     const img = new Image();
@@ -508,12 +567,10 @@ function doPost(e) {
                         const scaleSize = MAX_WIDTH / img.width;
                         canvas.width = MAX_WIDTH;
                         canvas.height = img.height * scaleSize;
-                        
                         const ctx = canvas.getContext('2d');
                         ctx.drawImage(img, 0, 0, canvas.width, canvas.height);
                         const base64 = canvas.toDataURL('image/jpeg', 0.8);
                         
-                        // 새로운 사진을 앨범 배열에 추가
                         const newPhotoObj = { date: new Date().toISOString().split('T')[0], url: base64 };
                         const updatedPhotos = [...(editingPlant.photos || []), newPhotoObj];
                         const updatedPlant = { ...editingPlant, photos: updatedPhotos };
@@ -521,7 +578,6 @@ function doPost(e) {
                         setEditingPlant(updatedPlant);
                         setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
                         
-                        // 동기화
                         setIsSavingPlant(true);
                         await syncPlantToSheet(updatedPlant);
                         setIsSavingPlant(false);
@@ -535,9 +591,10 @@ function doPost(e) {
             const logActionToSheet = async (plantName, taskType, action) => {
                 if (!GOOGLE_SCRIPT_URL) return true;
                 try {
-                    await fetch(GOOGLE_SCRIPT_URL, {
+                    fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
-                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, // 에러 회피를 위한 text/plain 사용
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' }, 
                         body: JSON.stringify({
                             recordType: 'log',
                             timestamp: new Date().toLocaleString('ko-KR'),
@@ -547,13 +604,9 @@ function doPost(e) {
                         })
                     });
                     return true;
-                } catch (error) {
-                    console.error("Sheet Error:", error);
-                    return false;
-                }
+                } catch (error) { return false; }
             };
 
-            // ✨ 식물 정보(DB) 및 사진 데이터를 시트2(Plants)와 드라이브에 전송하는 함수
             const syncPlantToSheet = async (plant) => {
                 if (!GOOGLE_SCRIPT_URL) return { success: true };
                 try {
@@ -569,101 +622,106 @@ function doPost(e) {
                             potType: plant.potType || '미지정',
                             cycles: plant.cycles || {},
                             tasks: plant.tasks || {},
-                            photos: plant.photos || [], // 앨범 사진 배열 추가
+                            photos: plant.photos || [],
                             createdAt: plant.createdAt,
-                            imageBase64: plant.imageBase64 // 프로필 사진 데이터 전송
+                            imageBase64: plant.imageBase64 
                         })
                     });
                     const result = await response.json();
                     return result;
-                } catch (error) {
-                    console.error("Sheet Sync Error:", error);
-                    return { error: error.message };
-                }
+                } catch (error) { return { error: error.message }; }
+            };
+
+            const deletePlantFromSheet = async (plantId) => {
+                if (!GOOGLE_SCRIPT_URL) return;
+                try {
+                    fetch(GOOGLE_SCRIPT_URL, {
+                        method: 'POST',
+                        mode: 'no-cors',
+                        headers: { 'Content-Type': 'text/plain;charset=utf-8' },
+                        body: JSON.stringify({ recordType: 'delete_plant', plantId: plantId })
+                    });
+                } catch (error) { console.error(error); }
             };
 
             const handleTaskAction = async (plantId, taskType, action) => {
                 const plant = plants.find(p => p.id === plantId);
                 const taskKey = `${plantId}-${taskType}`;
                 setLoadingTask(taskKey);
+                const oldDate = plant.tasks[taskType]; 
 
-                const oldDate = plant.tasks[taskType]; // 되돌리기를 위해 이전 날짜 저장
-
-                // 1. 상태 업데이트 로컬에 즉시 반영 (속도 최적화)
                 let newPlantObj = null;
                 const newPlants = plants.map(p => {
                     if (p.id === plantId) {
                         const today = new Date();
                         const nextD = new Date(today);
                         if (action === 'delay') {
-                            nextD.setDate(today.getDate() + 1); // 1일 미루기
+                            nextD.setDate(today.getDate() + 1); 
                         } else {
                             const customCycle = (p.cycles && p.cycles[taskType]) ? Number(p.cycles[taskType]) : TASK_META[taskType].cycle;
                             nextD.setDate(today.getDate() + customCycle);
                         }
-                        newPlantObj = {
-                            ...p,
-                            tasks: {
-                                ...p.tasks,
-                                [taskType]: nextD.toISOString().split('T')[0]
-                            }
-                        };
+                        newPlantObj = { ...p, tasks: { ...p.tasks, [taskType]: nextD.toISOString().split('T')[0] } };
                         return newPlantObj;
                     }
                     return p;
                 });
+                
                 setPlants(newPlants);
 
-                // 2. 백그라운드 서버 전송 (로그 + 식물DB 업데이트)
-                await logActionToSheet(plant.name, taskType, action);
-                if (newPlantObj) {
-                    syncPlantToSheet(newPlantObj); // 예정일이 변경되었으므로 백그라운드 동기화
-                }
+                logActionToSheet(plant.name, taskType, action);
+                if (newPlantObj) syncPlantToSheet(newPlantObj); 
                 
                 setTimeout(() => {
                     setLoadingTask(null);
-                    
                     if (action === 'complete') {
-                        // 타임라인에 식물 관리 기록 남기기
-                        const newAction = {
-                            id: Date.now(),
-                            plantId,
-                            date: new Date().toISOString(),
-                            content: `${TASK_META[taskType].title} 완료`,
-                            type: 'action'
-                        };
+                        const newAction = { id: Date.now(), plantId, date: new Date().toISOString(), content: `${TASK_META[taskType].title} 완료`, type: 'action' };
                         setActionHistory(prev => [newAction, ...prev]);
                     }
 
-                    // 실행 취소(Undo) 스낵바 띄우기
                     if (action === 'complete' || action === 'delay') {
                         if (undoData.timerId) clearTimeout(undoData.timerId);
-                        
-                        const actionName = action === 'complete' ? '완료' : '미루기';
-                        const timerId = setTimeout(() => {
-                            setUndoData(prev => ({ ...prev, show: false }));
-                        }, 5000); // 5초 후 사라짐
-
-                        setUndoData({
-                            show: true,
-                            plantId,
-                            taskType,
-                            oldDate,
-                            plantName: plant.name,
-                            actionName,
-                            timerId
-                        });
+                        const timerId = setTimeout(() => setUndoData(prev => ({ ...prev, show: false })), 5000); 
+                        setUndoData({ show: true, plantId, taskType, oldDate, plantName: plant.name, actionName: action === 'complete' ? '완료' : '미루기', timerId });
                     }
-                }, 400); // 로딩 UI 보여주기 위한 약간의 지연
+                }, 100); 
             };
 
-            // 실행 취소 핸들러
+            const handleCompleteAllTasks = (taskType, tasksToComplete) => {
+                const updatedPlants = [...plants];
+                
+                for (let { plant } of tasksToComplete) {
+                    const targetIdx = updatedPlants.findIndex(p => p.id === plant.id);
+                    if (targetIdx !== -1) {
+                        const nextD = new Date();
+                        const customCycle = (plant.cycles && plant.cycles[taskType]) ? Number(plant.cycles[taskType]) : TASK_META[taskType].cycle;
+                        nextD.setDate(nextD.getDate() + customCycle);
+                        updatedPlants[targetIdx] = {
+                            ...updatedPlants[targetIdx],
+                            tasks: { ...updatedPlants[targetIdx].tasks, [taskType]: nextD.toISOString().split('T')[0] }
+                        };
+                    }
+                }
+                
+                setPlants(updatedPlants);
+                showAlert(`${TASK_META[taskType].title} 항목을 모두 완료 처리했습니다!`, 'success');
+
+                tasksToComplete.forEach(({ plant }) => {
+                    logActionToSheet(plant.name, taskType, 'complete');
+                    const syncedPlant = updatedPlants.find(p => p.id === plant.id);
+                    if (syncedPlant) syncPlantToSheet(syncedPlant);
+                    
+                    // 완료 히스토리 기록
+                    const newAction = { id: Date.now() + Math.random(), plantId: plant.id, date: new Date().toISOString(), content: `${TASK_META[taskType].title} 완료`, type: 'action' };
+                    setActionHistory(prev => [newAction, ...prev]);
+                });
+            };
+
             const handleUndo = async () => {
                 if (!undoData.show) return;
                 const { plantId, taskType, oldDate, plantName, actionName, timerId } = undoData;
-                clearTimeout(timerId); // 타이머 취소
+                clearTimeout(timerId); 
                 
-                // 상태 되돌리기
                 let restoredPlant = null;
                 setPlants(prev => prev.map(p => {
                     if (p.id === plantId) {
@@ -673,15 +731,11 @@ function doPost(e) {
                     return p;
                 }));
 
-                // 스낵바 닫기
                 setUndoData(prev => ({ ...prev, show: false }));
-                
-                // 구글 시트에 취소 로그 및 DB 원상복구 전송
-                await logActionToSheet(plantName, taskType, `${actionName} 취소`);
+                logActionToSheet(plantName, taskType, `${actionName} 취소`);
                 if(restoredPlant) syncPlantToSheet(restoredPlant);
             };
 
-            // ✨ AI 식물 관리 주기 자동 추천 핸들러
             const handleRecommendCycle = async () => {
                 if (!newPlantForm.species.trim()) return showAlert('식물 종류를(예: 몬스테라) 먼저 정확히 입력해주세요.', 'error');
                 
@@ -692,8 +746,6 @@ function doPost(e) {
                     const userPrompt = `식물 종류: ${newPlantForm.species}\n위 식물의 실내 기준 적절한 관리 주기를 JSON으로 알려줘.`;
                     
                     const response = await callGeminiAPI(userPrompt, systemPrompt);
-                    
-                    // JSON 데이터 추출 (마크다운 백틱 등이 있을 경우 제거)
                     const jsonStr = response.replace(/```json/g, '').replace(/```/g, '').trim();
                     const recommendedCycles = JSON.parse(jsonStr);
 
@@ -717,11 +769,9 @@ function doPost(e) {
                 }
             };
 
-            // 식물 추가 핸들러 (사진 업로드 -> 구글드라이브 저장 후 최신 데이터 동기화)
             const handleAddPlant = async () => {
                 if (!newPlantForm.species.trim()) return showAlert('식물 종류를 입력해주세요.', 'error');
                 
-                // 식물 이름 조합: 애칭 (품종)
                 const finalPlantName = newPlantForm.nickname.trim() ? `${newPlantForm.nickname} (${newPlantForm.species})` : newPlantForm.species;
 
                 const today = new Date();
@@ -735,7 +785,7 @@ function doPost(e) {
                 const nextRepotDate = new Date(today); nextRepotDate.setDate(today.getDate() + Number(newPlantForm.cycles.repot));
                 
                 const newPlant = {
-                    id: Date.now(), // 고유 ID
+                    id: Date.now(), 
                     name: finalPlantName,
                     photo: newPlantForm.photo,
                     imageBase64: newPlantForm.imageBase64, 
@@ -751,67 +801,56 @@ function doPost(e) {
                         nutrient: nextNutrientDate.toISOString().split('T')[0],
                         repot: nextRepotDate.toISOString().split('T')[0],
                     },
-                    photos: [] // 앨범 초기화
+                    photos: [] 
                 };
 
-                // 로컬 UI 즉시 업데이트 (에러가 나도 사용자 화면에는 식물이 등록되게 함)
                 setPlants([...plants, newPlant]);
                 setIsAddModalOpen(false);
                 setNewPlantForm({ nickname: '', species: '', photo: '🌱', imageBase64: null, location: '거실', potType: '토분', lastWatered: todayStr, cycles: { ...defC } });
-                showAlert(`${newPlant.name}이(가) 추가되었습니다. 서버에 저장 중입니다...`, 'success');
+                showAlert(`${newPlant.name}이(가) 추가되었습니다.`, 'success');
                 setView('plants');
 
-                // 백그라운드 동기화 (앱스 스크립트로 전송)
+                logActionToSheet(newPlant.name, 'water', '새 식물 등록');
                 const syncResult = await syncPlantToSheet(newPlant);
-                await logActionToSheet(newPlant.name, 'water', '새 식물 등록');
-                
                 if (syncResult && syncResult.imageUrl && GOOGLE_SCRIPT_URL) {
-                    newPlant.imageBase64 = syncResult.imageUrl; // 무거운 사진 데이터를 드라이브 링크로 교체
+                    newPlant.imageBase64 = syncResult.imageUrl; 
                     setPlants(prev => prev.map(p => p.id === newPlant.id ? newPlant : p));
                 }
             };
 
-            // 식물 수정 핸들러
             const handleSavePlant = async () => {
                 if (!editingPlant.name.trim()) return showAlert('식물 이름을 입력해주세요.', 'error');
                 
-                setIsSavingPlant(true);
                 const updatedPlant = { ...editingPlant };
-
-                // 로컬 즉시 반영
                 setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
-                
-                // 구글 시트에 식물 DB 업데이트 (새 사진이 Base64 형태라면 드라이브에 신규 업로드됨)
+                setEditingPlant(null);
+                showAlert(`${updatedPlant.name}의 설정이 저장되었습니다.`, 'success');
+
+                logActionToSheet(updatedPlant.name, '설정 변경', '주기/정보 수정됨');
                 const syncResult = await syncPlantToSheet(updatedPlant);
                 if (syncResult && syncResult.imageUrl && syncResult.imageUrl !== updatedPlant.imageBase64) {
-                    updatedPlant.imageBase64 = syncResult.imageUrl; // 드라이브 링크로 교체
+                    updatedPlant.imageBase64 = syncResult.imageUrl; 
                     setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
                 }
-
-                await logActionToSheet(updatedPlant.name, '설정 변경', '주기/정보 수정됨');
-
-                setIsSavingPlant(false);
-                setEditingPlant(null); // 모달 닫기
-                showAlert(`${updatedPlant.name}의 설정이 저장되었습니다.`, 'success');
             };
 
-            // 식물 삭제 핸들러 (확인 팝업 연결)
             const handleDeleteClick = (plant) => {
                 setConfirmData({
                     isOpen: true,
-                    message: `정말 '${plant.name}'을(를) 삭제하시겠습니까?\\n(작성된 노트도 함께 삭제됩니다)`,
+                    message: `정말 '${plant.name}'을(를) 삭제하시겠습니까?\n(작성된 노트도 함께 삭제됩니다)`,
                     onConfirm: async () => {
                         setPlants(prev => prev.filter(p => p.id !== plant.id));
-                        setNotes(prev => prev.filter(n => n.plantId !== plant.id)); // 관련 노트 삭제
-                        setActionHistory(prev => prev.filter(h => h.plantId !== plant.id)); // 히스토리 삭제
+                        setNotes(prev => prev.filter(n => n.plantId !== plant.id)); 
+                        setActionHistory(prev => prev.filter(h => h.plantId !== plant.id)); 
                         setEditingPlant(null);
                         showAlert(`${plant.name}이(가) 삭제되었습니다.`, 'error');
-                        await logActionToSheet(plant.name, '식물 삭제', '데이터 삭제됨');
+                        
+                        logActionToSheet(plant.name, '식물 삭제', '데이터 삭제됨');
+                        deletePlantFromSheet(plant.id);
                     }
                 });
             };
 
-            // 노트 추가 핸들러
             const handleAddNote = () => {
                 if (!selectedPlantForNote) return showAlert('노트를 작성할 식물을 선택해주세요.', 'error');
                 if (!newNoteContent.trim()) return showAlert('내용을 입력해주세요.', 'error');
@@ -828,7 +867,24 @@ function doPost(e) {
                 showAlert('노트가 기록되었습니다.', 'success');
             };
 
-            // AI 식물 백과사전 및 진단 핸들러
+            // ✨ 데이터 초기화 핸들러
+            const handleResetData = () => {
+                setConfirmData({
+                    isOpen: true,
+                    message: "정말 모든 기기 데이터를 초기화하시겠습니까?\n(구글 시트의 데이터는 삭제되지 않습니다)",
+                    onConfirm: () => {
+                        localStorage.removeItem('groo_plants');
+                        localStorage.removeItem('groo_notes');
+                        localStorage.removeItem('groo_history');
+                        setPlants([]);
+                        setNotes([]);
+                        setActionHistory([]);
+                        showAlert('모든 기기 데이터가 초기화되었습니다.', 'success');
+                        setView('today');
+                    }
+                });
+            };
+
             const handleGuideQuery = async () => {
                 if (!guideForm.plantId) return showAlert('상담할 식물을 선택해주세요.', 'error');
                 if (!guideForm.query.trim()) return showAlert('궁금한 점이나 식물의 증상을 입력해주세요.', 'error');
@@ -879,7 +935,6 @@ function doPost(e) {
                 }
             };
 
-            // 데이터 분류 로직
             const parsedTasks = useMemo(() => {
                 const todayList = { ventilate: [], nutrient: [], repot: [], spray: [], water: [] };
                 const plannedList = {}; 
@@ -905,13 +960,21 @@ function doPost(e) {
             }, [plants]);
 
 
-            // 📅 달력 데이터 렌더링 로직
             const renderCalendar = () => {
                 const year = calDate.getFullYear();
                 const month = calDate.getMonth();
                 const days = getCalendarDays(year, month);
                 const today = new Date();
                 today.setHours(0,0,0,0);
+
+                const selectedTasks = [];
+                const selectedDone = actionHistory.filter(h => h.date.startsWith(selectedCalDate));
+                
+                plants.forEach(p => {
+                    Object.entries(p.tasks).forEach(([type, dStr]) => {
+                        if (dStr === selectedCalDate) selectedTasks.push({ plant: p, type });
+                    });
+                });
 
                 return (
                     <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 slide-up">
@@ -935,23 +998,28 @@ function doPost(e) {
                                 dateObj.setHours(0,0,0,0);
                                 const dateStr = `${year}-${String(month+1).padStart(2, '0')}-${String(day).padStart(2, '0')}`;
                                 const isToday = dateObj.getTime() === today.getTime();
+                                const isSelected = dateStr === selectedCalDate;
                                 
-                                // 이 날짜에 해야 할 일 (미래/오늘)
                                 const tasksForDay = [];
                                 plants.forEach(p => {
                                     Object.entries(p.tasks).forEach(([type, dStr]) => {
                                         if (dStr === dateStr) tasksForDay.push(type);
                                     });
                                 });
-                                // 이 날짜에 한 일 (과거)
                                 const doneForDay = actionHistory.filter(h => h.date.startsWith(dateStr)).map(h => h.content);
 
-                                // 점(Dot) 표시 (중복 제거)
                                 const dots = [...new Set(tasksForDay.map(t => TASK_META[t]?.dot))].slice(0, 3);
-                                if (doneForDay.length > 0) dots.push('bg-emerald-500'); // 완료 표시
+                                if (doneForDay.length > 0) dots.push('bg-emerald-500'); 
 
                                 return (
-                                    <div key={day} className={`p-2 flex flex-col items-center justify-start h-12 rounded-xl transition-colors cursor-pointer hover:bg-emerald-50 ${isToday ? 'bg-emerald-100 text-emerald-700 font-bold' : 'text-gray-700'}`}>
+                                    <div 
+                                        key={day} 
+                                        onClick={() => setSelectedCalDate(dateStr)}
+                                        className={`p-2 flex flex-col items-center justify-start h-12 rounded-xl transition-all cursor-pointer hover:bg-emerald-50 
+                                            ${isSelected ? 'ring-2 ring-emerald-400 bg-emerald-50' : ''} 
+                                            ${isToday && !isSelected ? 'bg-emerald-100 text-emerald-700 font-bold' : 'text-gray-700'}
+                                        `}
+                                    >
                                         <span>{day}</span>
                                         <div className="flex space-x-0.5 mt-1">
                                             {[...new Set(dots)].map((dotCls, i) => (
@@ -962,11 +1030,37 @@ function doPost(e) {
                                 );
                             })}
                         </div>
-                        <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2 text-xs text-gray-500 justify-center">
+                        <div className="mt-4 pt-4 border-t border-gray-100 flex flex-wrap gap-2 text-xs text-gray-500 justify-center mb-6">
                             <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-blue-600 mr-1"></div>물주기</div>
                             <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-blue-400 mr-1"></div>환기</div>
                             <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-green-500 mr-1"></div>영양</div>
                             <div className="flex items-center"><div className="w-2 h-2 rounded-full bg-emerald-500 mr-1"></div>완료됨</div>
+                        </div>
+
+                        <div className="p-4 bg-gray-50 rounded-xl border border-gray-100 relative fade-in">
+                            <div className="absolute -top-3 left-4 bg-white px-2 text-xs font-bold text-emerald-600 border border-gray-100 rounded-md shadow-sm">
+                                {selectedCalDate}
+                            </div>
+                            {selectedTasks.length === 0 && selectedDone.length === 0 ? (
+                                <p className="text-xs text-gray-400 text-center py-4">일정이 없습니다.</p>
+                            ) : (
+                                <div className="space-y-2 mt-2">
+                                    {selectedTasks.map((t, i) => (
+                                        <div key={i} className="flex items-center justify-between text-sm">
+                                            <span className="font-bold text-gray-700">{t.plant.name}</span>
+                                            <span className={`text-xs px-2 py-0.5 rounded-md font-medium ${TASK_META[t.type].color} bg-white border border-gray-200 shadow-sm`}>
+                                                {TASK_META[t.type].title} 예정
+                                            </span>
+                                        </div>
+                                    ))}
+                                    {selectedDone.map((d, i) => (
+                                        <div key={`done-${i}`} className="flex items-center justify-between text-sm opacity-60">
+                                            <span className="font-bold text-gray-500 line-through decoration-gray-400">{d.content}</span>
+                                            <span className="text-[10px] bg-emerald-100 text-emerald-600 font-bold px-1.5 py-0.5 rounded">완료됨</span>
+                                        </div>
+                                    ))}
+                                </div>
+                            )}
                         </div>
                     </div>
                 );
@@ -987,9 +1081,13 @@ function doPost(e) {
                             </span>}
                         </div>
                         <div className="flex items-center space-x-3 text-gray-600 relative">
-                            <button onClick={() => showAlert('프리미엄 혜택은 준비 중입니다 👑', 'success')} className="hover:text-emerald-500 transition-colors">
-                                <Icons.Crown />
+                            
+                            {/* ✨ 가이드 버튼 */}
+                            <button onClick={() => setIsGuideOpen(true)} className="hover:text-emerald-500 transition-colors relative group" title="DB 연동 가이드">
+                                <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
                             </button>
+
+                            {/* 알림 버튼 */}
                             <button 
                                 className="relative hover:text-emerald-500 transition-colors"
                                 onClick={() => {
@@ -1002,7 +1100,9 @@ function doPost(e) {
                                     <span className="absolute top-0 right-0 w-2 h-2 bg-red-500 rounded-full border-2 border-white"></span>
                                 )}
                             </button>
-                            <button onClick={() => showAlert('마이페이지는 준비 중입니다 👤', 'success')} className="hover:text-emerald-500 transition-colors">
+
+                            {/* ✨ 마이페이지 버튼 */}
+                            <button onClick={() => setView('mypage')} className={`hover:text-emerald-500 transition-colors ${view === 'mypage' ? 'text-emerald-500' : ''}`}>
                                 <Icons.User />
                             </button>
 
@@ -1017,9 +1117,12 @@ function doPost(e) {
                                     </div>
                                     <div className="max-h-64 overflow-y-auto">
                                         {notifications.length > 0 ? notifications.map(noti => (
-                                            <div key={noti.id} className="p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer text-left">
-                                                <p className="text-xs text-gray-800 mb-1 font-medium">{noti.text}</p>
-                                                <p className="text-[10px] text-gray-400">{noti.time}</p>
+                                            <div key={noti.id} className="p-3 border-b border-gray-50 hover:bg-gray-50 transition-colors cursor-pointer text-left flex items-start">
+                                                <div className="mr-2 mt-0.5">{noti.text.charAt(0)}</div>
+                                                <div>
+                                                    <p className="text-xs text-gray-800 mb-1 font-medium">{noti.text.substring(2)}</p>
+                                                    <p className="text-[10px] text-gray-400">{noti.time}</p>
+                                                </div>
                                             </div>
                                         )) : (
                                             <div className="p-6 text-center text-xs text-gray-400">새로운 알림이 없습니다.</div>
@@ -1034,7 +1137,6 @@ function doPost(e) {
                     <main className="flex-1 px-4">
                         {view === 'today' && (
                             <div className="slide-up">
-                                {/* Top Action Buttons */}
                                 <div className="grid grid-cols-3 gap-3 my-4">
                                     <button onClick={() => { setView('guide'); setGuideMode('diagnose'); }} className="bg-white rounded-xl py-3 flex flex-col items-center justify-center shadow-sm border border-purple-100 hover:bg-purple-50 transition-colors">
                                         <div className="w-8 h-8 rounded-full mb-1 flex items-center justify-center bg-purple-100 text-purple-600 text-lg">✨</div>
@@ -1052,14 +1154,12 @@ function doPost(e) {
                                     </button>
                                 </div>
 
-                                {/* Toggle Tabs */}
                                 <div className="flex bg-gray-100 rounded-full p-1 mb-6">
                                     <button className={`flex-1 py-2 rounded-full text-sm font-bold transition-all ${todayTab === 'today' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`} onClick={() => setTodayTab('today')}>오늘</button>
                                     <button className={`flex-1 py-2 rounded-full text-sm font-bold transition-all ${todayTab === 'planned' ? 'bg-white shadow text-gray-900' : 'text-gray-500'}`} onClick={() => setTodayTab('planned')}>예정</button>
                                     <button className={`flex-1 py-2 rounded-full text-sm font-bold transition-all flex justify-center items-center ${todayTab === 'calendar' ? 'bg-white shadow text-emerald-600' : 'text-gray-500'}`} onClick={() => setTodayTab('calendar')}><Icons.Calendar/><span className="ml-1">달력</span></button>
                                 </div>
 
-                                {/* Today View List */}
                                 {todayTab === 'today' && (
                                     <div className="space-y-6">
                                         {weather && (
@@ -1085,7 +1185,14 @@ function doPost(e) {
                                                             <IconObj cls={meta.color} />
                                                             <h2 className="text-lg font-bold text-gray-800">{meta.title}</h2>
                                                         </div>
-                                                        <button className="text-emerald-500 text-sm font-bold flex items-center" onClick={()=>showAlert(`${meta.title} 항목을 모두 완료 처리하시겠습니까? (데모용)`, 'success')}>
+                                                        <button 
+                                                            className="text-emerald-500 text-sm font-bold flex items-center hover:text-emerald-600 transition-colors" 
+                                                            onClick={() => setConfirmData({
+                                                                isOpen: true,
+                                                                message: `${meta.title} 항목 ${tasks.length}개를 모두 완료 처리하시겠습니까?`,
+                                                                onConfirm: () => handleCompleteAllTasks(taskType, tasks)
+                                                            })}
+                                                        >
                                                             <span className="underline underline-offset-4 decoration-emerald-300">{tasks.length}개 모두 적용</span>
                                                             <svg className="w-4 h-4 ml-1" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M5 15l7-7 7 7"/></svg>
                                                         </button>
@@ -1131,7 +1238,6 @@ function doPost(e) {
                                     </div>
                                 )}
 
-                                {/* Planned View List */}
                                 {todayTab === 'planned' && (
                                     <div className="space-y-8 mt-2">
                                         {parsedTasks.sortedPlannedKeys.map(diffDays => (
@@ -1172,12 +1278,10 @@ function doPost(e) {
                                     </div>
                                 )}
 
-                                {/* ✨ 달력 뷰 (Calendar) */}
                                 {todayTab === 'calendar' && renderCalendar()}
                             </div>
                         )}
 
-                        {/* '내 식물' 뷰 */}
                         {view === 'plants' && (
                             <div className="slide-up py-4">
                                 <div className="flex justify-between items-center mb-6">
@@ -1212,7 +1316,6 @@ function doPost(e) {
                             </div>
                         )}
 
-                        {/* '노트' 뷰 */}
                         {view === 'note' && (
                             <div className="slide-up py-4">
                                 <h2 className="text-xl font-bold text-gray-800 mb-6">식물 노트 📝</h2>
@@ -1252,7 +1355,6 @@ function doPost(e) {
                             </div>
                         )}
 
-                        {/* '케어 가이드' 뷰 */}
                         {view === 'guide' && (
                             <div className="slide-up py-4 flex flex-col h-full min-h-[70vh]">
                                 <h2 className="text-xl font-bold text-gray-800 mb-2 flex items-center"><span className="text-purple-500 mr-2 drop-shadow">✨</span> AI 케어 가이드</h2>
@@ -1263,7 +1365,6 @@ function doPost(e) {
                                     <button className={`flex-1 py-2 rounded-full text-sm font-bold transition-all ${guideMode === 'search' ? 'bg-white shadow text-purple-600' : 'text-gray-500'}`} onClick={() => setGuideMode('search')}>식물 백과사전</button>
                                 </div>
 
-                                {/* 모드 1: 내 식물 진단 */}
                                 {guideMode === 'diagnose' && (
                                     <>
                                         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 mb-6 relative fade-in">
@@ -1316,7 +1417,6 @@ function doPost(e) {
                                     </>
                                 )}
 
-                                {/* 모드 2: 식물 백과사전 */}
                                 {guideMode === 'search' && (
                                     <>
                                         <div className="bg-white p-5 rounded-2xl shadow-sm border border-gray-50 mb-6 relative fade-in">
@@ -1362,12 +1462,56 @@ function doPost(e) {
                                 )}
                             </div>
                         )}
-                    </main>
 
-                    {/* DB Guide Button */}
-                    <button onClick={() => setIsGuideOpen(true)} className="fixed bottom-24 right-4 bg-gray-800 text-white p-3 rounded-full shadow-lg z-40 hover:bg-gray-700 transition-transform hover:scale-105 flex items-center justify-center">
-                        <svg className="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"/><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"/></svg>
-                    </button>
+                        {/* ✨ 마이페이지 뷰 */}
+                        {view === 'mypage' && (
+                            <div className="slide-up py-4">
+                                <h2 className="text-xl font-bold text-gray-800 mb-6">마이페이지 👤</h2>
+                                
+                                {/* 프로필 정보 */}
+                                <div className="bg-white p-6 rounded-2xl shadow-sm border border-gray-50 mb-6 flex items-center space-x-4 relative overflow-hidden">
+                                    <div className="w-16 h-16 bg-emerald-100 text-emerald-500 rounded-full flex items-center justify-center text-3xl shadow-inner z-10">
+                                        🌿
+                                    </div>
+                                    <div className="z-10">
+                                        <h3 className="font-bold text-lg text-gray-800">초보 식물 집사</h3>
+                                        <p className="text-sm text-gray-500">Purut과 함께 식물 가꾸기</p>
+                                    </div>
+                                    <div className="absolute right-0 top-0 opacity-5 text-8xl -mt-6 -mr-4">🌿</div>
+                                </div>
+
+                                {/* 통계 */}
+                                <div className="grid grid-cols-2 gap-4 mb-6">
+                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 text-center flex flex-col justify-center items-center">
+                                        <div className="text-3xl font-extrabold text-emerald-500 mb-1">{plants.length}</div>
+                                        <div className="text-xs font-bold text-gray-500">나의 반려식물</div>
+                                    </div>
+                                    <div className="bg-white p-4 rounded-2xl shadow-sm border border-gray-50 text-center flex flex-col justify-center items-center">
+                                        <div className="text-3xl font-extrabold text-emerald-500 mb-1">{notes.length}</div>
+                                        <div className="text-xs font-bold text-gray-500">작성한 노트</div>
+                                    </div>
+                                </div>
+
+                                {/* 설정 및 데이터 관리 */}
+                                <div className="bg-white rounded-2xl shadow-sm border border-gray-50 overflow-hidden">
+                                    <button onClick={() => setIsGuideOpen(true)} className="w-full p-4 flex items-center justify-between border-b border-gray-50 hover:bg-gray-50 transition-colors">
+                                        <div className="flex items-center">
+                                            <span className="w-8 h-8 rounded-full bg-gray-100 flex items-center justify-center mr-3 text-gray-600">⚙️</span>
+                                            <span className="text-sm font-bold text-gray-700">구글 연동 가이드 보기</span>
+                                        </div>
+                                        <svg className="w-4 h-4 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M9 5l7 7-7 7"/></svg>
+                                    </button>
+                                    
+                                    <button onClick={handleResetData} className="w-full p-4 flex items-center justify-between hover:bg-red-50 transition-colors">
+                                        <div className="flex items-center">
+                                            <span className="w-8 h-8 rounded-full bg-red-50 flex items-center justify-center mr-3 text-red-500">🗑️</span>
+                                            <span className="text-sm font-bold text-red-500">모든 데이터 초기화</span>
+                                        </div>
+                                    </button>
+                                </div>
+                            </div>
+                        )}
+                    </main>
 
                     {/* Undo Snackbar */}
                     {undoData.show && (
