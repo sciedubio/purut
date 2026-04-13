@@ -329,7 +329,7 @@ function doPost(e) {
     var imageUrl = data.imageBase64 || "";
     var FOLDER_ID = "1sZ2X_BVQpzf0scq-fVccDxGYRw_N4rHX"; 
 
-    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진)
+    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진 - 썸네일 API 방식으로 변경!)
     if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
       if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
         try {
@@ -339,7 +339,9 @@ function doPost(e) {
           var blob = Utilities.newBlob(bytes, contentType, data.plantName + "_profile_" + new Date().getTime());
           var file = folder.createFile(blob);
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-          imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
+          
+          // ✨ 수정됨: 미리보기(Thumbnail) URL로 저장하여 화면에 잘 보이도록 변경
+          imageUrl = "https://drive.google.com/thumbnail?id=" + file.getId() + "&sz=w1000";
         } catch(driveError) { 
           imageUrl = "업로드실패_" + driveError.message;
         }
@@ -348,7 +350,7 @@ function doPost(e) {
       }
     }
 
-    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열)
+    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열 - 썸네일 API 방식으로 변경!)
     if (data.photos && Array.isArray(data.photos)) {
       for (var k = 0; k < data.photos.length; k++) {
         if (data.photos[k].url && data.photos[k].url.indexOf('data:image') === 0) {
@@ -360,7 +362,9 @@ function doPost(e) {
               var pBlob = Utilities.newBlob(pBytes, pContentType, data.plantName + "_album_" + new Date().getTime() + "_" + k);
               var pFile = folder.createFile(pBlob);
               pFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
-              data.photos[k].url = "https://drive.google.com/uc?export=view&id=" + pFile.getId(); 
+              
+              // ✨ 수정됨: 미리보기(Thumbnail) URL로 저장하여 화면에 잘 보이도록 변경
+              data.photos[k].url = "https://drive.google.com/thumbnail?id=" + pFile.getId() + "&sz=w1000"; 
             } catch(driveError) { 
               data.photos[k].url = "업로드실패_" + driveError.message;
             }
