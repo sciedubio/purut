@@ -16,9 +16,6 @@
     <link rel="apple-touch-icon" href="https://cdn.jsdelivr.net/npm/twemoji@11.3.0/2/svg/1f33f.svg">
     <link rel="icon" type="image/svg+xml" href="https://cdn.jsdelivr.net/npm/twemoji@11.3.0/2/svg/1f33f.svg">
     
-    <!-- 안드로이드(삼성갤럭시) 앱 설치를 위한 매니페스트 파일 내장 -->
-    <link rel="manifest" href='data:application/json;charset=utf-8,%7B%22name%22%3A%22Purut%22%2C%22short_name%22%3A%22Purut%22%2C%22start_url%22%3A%22.%22%2C%22display%22%3A%22standalone%22%2C%22background_color%22%3A%22%23ffffff%22%2C%22theme_color%22%3A%22%2310b981%22%2C%22icons%22%3A%5B%7B%22src%22%3A%22https%3A%2F%2Fcdn.jsdelivr.net%2Fnpm%2Ftwemoji%4011.3.0%2F2%2Fsvg%2F1f33f.svg%22%2C%22sizes%22%3A%22192x192%20512x512%22%2C%22type%22%3A%22image%2Fsvg%2Bxml%22%7D%5D%7D'>
-
     <script src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
     <script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
     <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
@@ -40,15 +37,16 @@
     <div id="root"></div>
 
     <script type="text/babel">
-        // ==========================================
-        // ⚙️ 설정 구역: 구글 스크립트 웹앱 URL 입력
-        // ==========================================
+        // =========================================================================================
+        // 🚨 중요 🚨: [배포 관리]에서 복사한 '최신 웹앱 주소'를 아래에 반드시 덮어쓰기 해주세요!
+        // =========================================================================================
         const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbwsXGczE8O2fW452R7fXwnYfXr4kpax82Cx9vQWXDnLCPQRMXJG5kAAbn5r-vRl1Moc/exec"; 
+
 
         // ✨ Gemini AI 호출
         const callGeminiAPI = async (prompt, systemInstruction = "You are a helpful assistant.", imageBase64 = null) => {
-            if (!GOOGLE_SCRIPT_URL) {
-                throw new Error("구글 스크립트 URL이 연결되지 않았습니다.");
+            if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("여기에_")) {
+                throw new Error("구글 스크립트 웹앱 주소가 입력되지 않았습니다. 코드를 확인해주세요.");
             }
 
             const payload = {
@@ -197,7 +195,6 @@
             if (!isOpen) return null;
             const scriptCode = `// ✨ 이 함수를 실행하여 구글 드라이브 '파일 생성' 권한을 확실하게 부여받습니다!
 function setup() {
-  // 실제 파일을 하나 만들고 휴지통에 버리는 과정으로 권한을 100% 강제 활성화합니다.
   var temp = DriveApp.createFile("퍼릇_권한테스트.txt", "이 파일은 삭제하셔도 됩니다.");
   temp.setTrashed(true); 
   console.log("✅ 구글 드라이브 권한 완벽 허용 완료! 이제 앱에서 사진 저장이 가능합니다.");
@@ -330,11 +327,9 @@ function doPost(e) {
     }
 
     var imageUrl = data.imageBase64 || "";
-    
-    // 🚨 코드에 폴더 ID를 직접 내장해두었습니다! 이제 API 키만 넣고 배포하시면 됩니다. 🚨
     var FOLDER_ID = "1sZ2X_BVQpzf0scq-fVccDxGYRw_N4rHX"; 
 
-    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진 - 진짜 원인 추적기 탑재!)
+    // 📸 4-1. 구글 드라이브 이미지 업로드 (메인 프로필 사진)
     if (data.imageBase64 && data.imageBase64.indexOf('data:image') === 0) {
       if (FOLDER_ID && FOLDER_ID !== "여기에_구글드라이브_폴더_ID를_넣으세요") {
         try {
@@ -346,7 +341,6 @@ function doPost(e) {
           file.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
           imageUrl = "https://drive.google.com/uc?export=view&id=" + file.getId();
         } catch(driveError) { 
-          // 🚨 에러 발생 시, 구글 스크립트가 뱉는 "진짜 에러 원인"을 그대로 포함시켜서 앱으로 돌려보냅니다.
           imageUrl = "업로드실패_" + driveError.message;
         }
       } else {
@@ -354,7 +348,7 @@ function doPost(e) {
       }
     }
 
-    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열 - 진짜 원인 추적기 탑재!)
+    // 📸 4-2. 구글 드라이브 이미지 업로드 (성장 앨범 사진 배열)
     if (data.photos && Array.isArray(data.photos)) {
       for (var k = 0; k < data.photos.length; k++) {
         if (data.photos[k].url && data.photos[k].url.indexOf('data:image') === 0) {
@@ -368,7 +362,6 @@ function doPost(e) {
               pFile.setSharing(DriveApp.Access.ANYONE_WITH_LINK, DriveApp.Permission.VIEW);
               data.photos[k].url = "https://drive.google.com/uc?export=view&id=" + pFile.getId(); 
             } catch(driveError) { 
-              // 🚨 앨범 사진도 에러 발생 시 에러 상세 원인 포함
               data.photos[k].url = "업로드실패_" + driveError.message;
             }
           } else {
@@ -416,7 +409,6 @@ function doPost(e) {
       sheet.appendRow([data.timestamp, data.plantName, data.taskType, data.action]);
     }
     
-    // 응답할 때, 드라이브 URL로 변환된 photos 배열을 같이 돌려줌!
     return ContentService.createTextOutput(JSON.stringify({
       "result": "success", 
       "imageUrl": imageUrl,
@@ -476,7 +468,7 @@ function doPost(e) {
 
         const App = () => {
             // ✨ 1. 나만의 비밀번호 설정 (원하는 숫자로 변경하세요!)
-            const SECRET_PASSWORD = "7145"; 
+            const SECRET_PASSWORD = "1004"; 
 
             // ✨ 2. 로그인 상태 관리
             const [isLoggedIn, setIsLoggedIn] = useState(localStorage.getItem('groo_logged_in') === 'true');
@@ -592,7 +584,7 @@ function doPost(e) {
 
             // ✨ 구글 시트에서 최신 '식물'과 '노트' 데이터를 완벽하게 불러오는 함수
             const loadDataFromSheet = async () => {
-                if (!GOOGLE_SCRIPT_URL) return;
+                if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("여기에_")) return;
                 setIsSyncing(true);
                 try {
                     const res = await fetch(GOOGLE_SCRIPT_URL);
@@ -638,6 +630,8 @@ function doPost(e) {
 
             // 초기 앱 시작 시 데이터 로드
             useEffect(() => {
+                if(!isLoggedIn) return;
+
                 const savedPlants = localStorage.getItem('groo_plants');
                 if (savedPlants) setPlants(JSON.parse(savedPlants));
                 
@@ -666,7 +660,7 @@ function doPost(e) {
                 } else {
                     fetchWeather(37.5665, 126.9780);
                 }
-            }, []);
+            }, [isLoggedIn]);
 
             useEffect(() => {
                 localStorage.setItem('groo_history', JSON.stringify(actionHistory));
@@ -748,7 +742,7 @@ function doPost(e) {
             };
 
             const logActionToSheet = async (plantName, taskType, action) => {
-                if (!GOOGLE_SCRIPT_URL) return true;
+                if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("여기에_")) return true;
                 try {
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
@@ -767,7 +761,7 @@ function doPost(e) {
             };
 
             const syncPlantToSheet = async (plant) => {
-                if (!GOOGLE_SCRIPT_URL) return { success: true };
+                if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("여기에_")) return { success: true };
                 try {
                     const response = await fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
@@ -793,7 +787,7 @@ function doPost(e) {
             };
 
             const deletePlantFromSheet = async (plantId) => {
-                if (!GOOGLE_SCRIPT_URL) return;
+                if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("여기에_")) return;
                 try {
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST',
@@ -998,7 +992,7 @@ function doPost(e) {
 
                 logActionToSheet(newPlant.name, 'water', '새 식물 등록');
                 const syncResult = await syncPlantToSheet(newPlant);
-                if (syncResult && GOOGLE_SCRIPT_URL) {
+                if (syncResult && GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("여기에_")) {
                     let needsUpdate = false;
                     if (syncResult.imageUrl) { 
                         if (syncResult.imageUrl.includes('업로드실패')) {
@@ -1082,7 +1076,7 @@ function doPost(e) {
                 showAlert('노트가 기록되었습니다.', 'success');
 
                 // 백그라운드 구글 시트 저장
-                if (GOOGLE_SCRIPT_URL) {
+                if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("여기에_")) {
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ recordType: 'add_note', note: newNote })
@@ -1094,7 +1088,7 @@ function doPost(e) {
             const handleDeleteNote = (noteId) => {
                 setNotes(notes.filter(n => n.id !== noteId));
                 // 백그라운드 구글 시트 삭제 명령
-                if (GOOGLE_SCRIPT_URL) {
+                if (GOOGLE_SCRIPT_URL && !GOOGLE_SCRIPT_URL.includes("여기에_")) {
                     fetch(GOOGLE_SCRIPT_URL, {
                         method: 'POST', mode: 'no-cors', headers: { 'Content-Type': 'text/plain;charset=utf-8' },
                         body: JSON.stringify({ recordType: 'delete_note', noteId: noteId })
@@ -1146,7 +1140,7 @@ function doPost(e) {
                 if (!searchPlantName.trim()) return showAlert('궁금한 식물 종류를 입력해주세요.', 'error');
                 setIsAILoadingSearch(true);
                 try {
-                    const systemPrompt = "당신은 최고의 식물 전문가입니다. 사용자가 검색한 식물 종에 대한 A to Z 관리법을 알려주세요.";
+                    const systemPrompt = "당신은 최고의 식물 전문가입니다. 사용자가 검색한 식물 종에 대한 A to 대 Z 관리법을 알려주세요.";
                     const userPrompt = `식물 종류: ${searchPlantName}\n이 식물의 완벽 관리 노하우를 알려줘.`;
                     const response = await callGeminiAPI(userPrompt, systemPrompt);
                     setSearchResponse(response);
