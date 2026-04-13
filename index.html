@@ -40,7 +40,7 @@
         // =========================================================================================
         // 🚨 중요 🚨: [배포 관리]에서 복사한 '최신 웹앱 주소'를 아래에 반드시 덮어쓰기 해주세요!
         // =========================================================================================
-        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbw212WzzmTDy4C2cBBk62X9zoSBXrAdsosz0jzRtNuB9zpUFBWCUjimGVgeXroeu83o/exec"; 
+        const GOOGLE_SCRIPT_URL = "https://script.google.com/macros/s/AKfycbzWxumhOe6uphzhIC91l-yPAaXblKBjjnylGE4SUCIfSKGMDMK2bpLuJtiyeQExXp4k/exec"; 
 
 
         // ✨ Gemini AI 호출
@@ -745,6 +745,26 @@ function doPost(e) {
                 reader.readAsDataURL(file);
             };
 
+            // ✨ 성장 앨범 사진 삭제 기능 추가
+            const handleDeletePhoto = async (indexToDelete) => {
+                setConfirmData({
+                    isOpen: true,
+                    message: "이 사진을 앨범에서 삭제하시겠습니까?",
+                    onConfirm: async () => {
+                        const updatedPhotos = editingPlant.photos.filter((_, idx) => idx !== indexToDelete);
+                        const updatedPlant = { ...editingPlant, photos: updatedPhotos };
+                        
+                        setEditingPlant(updatedPlant);
+                        setPlants(prev => prev.map(p => p.id === updatedPlant.id ? updatedPlant : p));
+                        
+                        setIsSavingPlant(true);
+                        await syncPlantToSheet(updatedPlant);
+                        setIsSavingPlant(false);
+                        showAlert('사진이 삭제되었습니다.', 'success');
+                    }
+                });
+            };
+
             const logActionToSheet = async (plantName, taskType, action) => {
                 if (!GOOGLE_SCRIPT_URL || GOOGLE_SCRIPT_URL.includes("여기에_")) return true;
                 try {
@@ -1144,7 +1164,7 @@ function doPost(e) {
                 if (!searchPlantName.trim()) return showAlert('궁금한 식물 종류를 입력해주세요.', 'error');
                 setIsAILoadingSearch(true);
                 try {
-                    const systemPrompt = "당신은 최고의 식물 전문가입니다. 사용자가 검색한 식물 종에 대한 A to 대 Z 관리법을 알려주세요.";
+                    const systemPrompt = "당신은 최고의 식물 전문가입니다. 사용자가 검색한 식물 종에 대한 A to Z 관리법을 알려주세요.";
                     const userPrompt = `식물 종류: ${searchPlantName}\n이 식물의 완벽 관리 노하우를 알려줘.`;
                     const response = await callGeminiAPI(userPrompt, systemPrompt);
                     setSearchResponse(response);
@@ -2051,6 +2071,13 @@ function doPost(e) {
                                                             <div className="absolute bottom-0 w-full bg-gradient-to-t from-black to-transparent p-2 pt-6">
                                                                 <span className="text-white text-[10px] font-bold drop-shadow-md">{pic.date}</span>
                                                             </div>
+                                                            {/* ✨ 앨범 사진 개별 삭제 버튼 추가 */}
+                                                            <button 
+                                                                onClick={(e) => { e.stopPropagation(); handleDeletePhoto(idx); }}
+                                                                className="absolute top-2 right-2 w-6 h-6 bg-black bg-opacity-50 hover:bg-red-500 text-white rounded-full flex items-center justify-center transition-colors opacity-0 group-hover:opacity-100"
+                                                            >
+                                                                <svg className="w-3 h-3" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth="2" d="M6 18L18 6M6 6l12 12"/></svg>
+                                                            </button>
                                                         </div>
                                                     ))
                                                 ) : (
